@@ -605,11 +605,15 @@ body {
 
 .stat-card {
     transition: all 0.3s ease;
+    background: rgba(22, 27, 34, 0.9) !important;
+    border: 1px solid rgba(67, 97, 238, 0.15);
+    border-radius: 16px;
 }
 
 .stat-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    box-shadow: 0 10px 25px rgba(67, 97, 238, 0.2) !important;
+    border-color: rgba(67, 97, 238, 0.4);
 }
 
 .stat-card-accent {
@@ -694,14 +698,16 @@ table.table {
 
 table.table th {
     font-weight: 600;
-    color: #E6EDF3;
-    background-color: rgba(67, 100, 247, 0.2);
-    border-color: rgba(67, 100, 247, 0.3);
+    color: #F0F6FC;
+    background-color: rgba(67, 97, 238, 0.25);
+    border-color: rgba(67, 97, 238, 0.35);
+    font-size: 0.9rem;
+    letter-spacing: 0.03em;
 }
 
 table.table td {
     color: #E6EDF3;
-    border-color: rgba(67, 100, 247, 0.2);
+    border-color: rgba(67, 97, 238, 0.12);
 }
 
 table.table tbody tr {
@@ -709,7 +715,186 @@ table.table tbody tr {
 }
 
 table.table tbody tr:hover {
-    background-color: rgba(67, 100, 247, 0.1);
+    background-color: rgba(67, 97, 238, 0.12);
+}
+
+.table-responsive {
+    background: rgba(13, 17, 23, 0.5);
+}
+
+.pagination .page-link {
+    background: rgba(22, 27, 34, 0.9);
+    border-color: rgba(67, 97, 238, 0.2);
+    color: #C9D1D9;
+}
+
+.pagination .page-link:hover {
+    background: rgba(67, 97, 238, 0.2);
+    border-color: rgba(67, 97, 238, 0.4);
+    color: #FFFFFF;
+}
+
+.pagination .page-item.active .page-link {
+    background: linear-gradient(135deg, #4361ee, #3a0ca3);
+    border-color: #4361ee;
+    color: #FFFFFF;
+}
+
+.pagination .page-item.disabled .page-link {
+    background: rgba(22, 27, 34, 0.5);
+    border-color: rgba(67, 97, 238, 0.1);
+    color: #484F58;
+}
+
+.alert-info {
+    background: rgba(76, 201, 240, 0.1);
+    border-color: rgba(76, 201, 240, 0.3);
+    color: #C9D1D9;
+}
+
+.alert-info .alert-heading {
+    color: #80D8FF;
+}
+
+.form-control, .form-select {
+    background: rgba(22, 27, 34, 0.9);
+    border-color: rgba(67, 97, 238, 0.2);
+    color: #E6EDF3;
+}
+
+.form-control:focus, .form-select:focus {
+    background: rgba(22, 27, 34, 1);
+    border-color: #4361ee;
+    color: #FFFFFF;
+    box-shadow: 0 0 0 0.2rem rgba(67, 97, 238, 0.25);
+}
+
+.form-control::placeholder {
+    color: #8B949E;
+}
+
+.input-group-text {
+    background: rgba(22, 27, 34, 0.7);
+    border-color: rgba(67, 97, 238, 0.2);
+    color: #C9D1D9;
+}
+
+.dropdown-menu {
+    background: rgba(22, 27, 34, 0.98);
+    border-color: rgba(67, 97, 238, 0.3);
+}
+
+.dropdown-item {
+    color: #E6EDF3;
+}
+
+.dropdown-item:hover {
+    background: rgba(67, 97, 238, 0.2);
+    color: #FFFFFF;
+}
+
+.nav-tabs {
+    border-bottom-color: rgba(67, 97, 238, 0.2);
+}
+
+.nav-tabs .nav-link {
+    color: #8B949E;
+    border: none;
+}
+
+.nav-tabs .nav-link:hover {
+    color: #E6EDF3;
+    border-color: transparent;
+}
+
+.nav-tabs .nav-link.active {
+    background: rgba(67, 97, 238, 0.15);
+    color: #FFFFFF;
+    border-color: rgba(67, 97, 238, 0.3);
+    border-bottom-color: transparent;
+}
+
+.card.border-primary {
+    border-color: rgba(67, 97, 238, 0.3) !important;
+    background: rgba(22, 27, 34, 0.9);
+}
+
+.card.border-success {
+    border-color: rgba(46, 196, 182, 0.3) !important;
+    background: rgba(22, 27, 34, 0.9);
+}
+
+/* 暗色主题下按钮样式覆盖 */
+.btn-outline-secondary {
+    color: #C9D1D9;
+    border-color: rgba(240, 246, 252, 0.2);
+    background: rgba(22, 27, 34, 0.6);
+}
+
+.btn-outline-secondary:hover {
+    color: #FFFFFF;
+    background: rgba(67, 97, 238, 0.2);
+    border-color: rgba(67, 97, 238, 0.4);
+}
+
+.btn-outline-success {
+    color: #2ec4b6;
+    border-color: rgba(46, 196, 182, 0.4);
+}
+
+.btn-outline-success:hover {
+    background: rgba(46, 196, 182, 0.2);
+    border-color: #2ec4b6;
+    color: #FFFFFF;
+}
+
+.btn-outline-purple {
+    color: #CE93D8;
+    border-color: rgba(156, 39, 176, 0.4);
+}
+
+.btn-outline-purple:hover {
+    background: rgba(156, 39, 176, 0.2);
+    border-color: #CE93D8;
+    color: #FFFFFF;
+}
+
+.btn-outline-info {
+    color: #80D8FF;
+    border-color: rgba(76, 201, 240, 0.4);
+}
+
+.btn-outline-info:hover {
+    background: rgba(76, 201, 240, 0.2);
+    border-color: #80D8FF;
+    color: #FFFFFF;
+}
+
+.btn-outline-warning {
+    color: #FFD54F;
+    border-color: rgba(255, 193, 7, 0.4);
+}
+
+.btn-outline-warning:hover {
+    background: rgba(255, 193, 7, 0.2);
+    border-color: #FFD54F;
+    color: #FFFFFF;
+}
+
+.feature-importance-container span,
+.cluster-metrics span {
+    color: #C9D1D9;
+}
+
+.cluster-metrics .fw-bold {
+    color: #FFFFFF !important;
+}
+
+.feature-importance-item .feature-imp-accuracy-val,
+.feature-importance-item .feature-imp-submission-val,
+.feature-importance-item .feature-imp-mastery-val,
+.feature-importance-item .feature-imp-time-val {
+    color: #FFFFFF !important;
 }
 
 table.table .text-muted {
@@ -787,7 +972,15 @@ p.text-muted {
 
 .gradient-header {
     border: none;
-    background: linear-gradient(120deg, rgba(240, 244, 255, 0.8), rgba(255, 255, 255, 1));
+    background: linear-gradient(120deg, rgba(22, 27, 34, 0.95), rgba(13, 17, 23, 0.95));
+    color: #E6EDF3;
+}
+.gradient-header .card-title {
+    color: #FFFFFF !important;
+    text-shadow: 0 0 20px rgba(67, 97, 238, 0.5);
+}
+.gradient-header .text-muted {
+    color: #C9D1D9 !important;
 }
 
 .avatar-circle {
@@ -814,51 +1007,52 @@ p.text-muted {
 }
 
 .gradient-green-light {
-    background: linear-gradient(120deg, #E8F5E9, #F1F8E9);
+    background: linear-gradient(120deg, rgba(46, 196, 182, 0.2), rgba(46, 196, 182, 0.08));
     border: none;
-    color: #198754;
+    color: #2ec4b6;
+    border-bottom: 1px solid rgba(46, 196, 182, 0.3);
 }
 
-    .gradient-blue-light {
-        background: linear-gradient(120deg, #E0F7FA, #E1F5FE);
-        border: none;
-        color: #0056b3;
-    }
-
-.gradient-green-light {
-    background: linear-gradient(120deg, #E8F5E9, #E0F2F1);
+.gradient-blue-light {
+    background: linear-gradient(120deg, rgba(67, 97, 238, 0.2), rgba(67, 97, 238, 0.08));
     border: none;
-    color: #198754;
+    color: #7B9BFF;
+    border-bottom: 1px solid rgba(67, 97, 238, 0.3);
 }
 
 .gradient-purple-light {
-    background: linear-gradient(120deg, #F3E5F5, #EDE7F6);
+    background: linear-gradient(120deg, rgba(156, 39, 176, 0.2), rgba(156, 39, 176, 0.08));
     border: none;
-    color: #1a1a1a;
+    color: #CE93D8;
+    border-bottom: 1px solid rgba(156, 39, 176, 0.3);
 }
 
 .gradient-orange-light {
-    background: linear-gradient(120deg, #FFF3E0, #FFF8E1);
+    background: linear-gradient(120deg, rgba(255, 159, 28, 0.2), rgba(255, 159, 28, 0.08));
     border: none;
-    color: #fd7e14;
+    color: #FFB74D;
+    border-bottom: 1px solid rgba(255, 159, 28, 0.3);
 }
 
 .gradient-info-light {
-    background: linear-gradient(120deg, #E0F7FA, #E1F5FE);
+    background: linear-gradient(120deg, rgba(76, 201, 240, 0.2), rgba(76, 201, 240, 0.08));
     border: none;
-    color: #0dcaf0;
+    color: #80D8FF;
+    border-bottom: 1px solid rgba(76, 201, 240, 0.3);
 }
 
 .gradient-warning-light {
-    background: linear-gradient(120deg, #FFF3E0, #FFF8E1);
+    background: linear-gradient(120deg, rgba(255, 193, 7, 0.2), rgba(255, 193, 7, 0.08));
     border: none;
-    color: #ffc107;
+    color: #FFD54F;
+    border-bottom: 1px solid rgba(255, 193, 7, 0.3);
 }
 
 .gradient-primary-light {
-    background: linear-gradient(120deg, #E0F7FA, #E1F5FE);
+    background: linear-gradient(120deg, rgba(13, 110, 253, 0.2), rgba(13, 110, 253, 0.08));
     border: none;
-    color: #0d6efd;
+    color: #82B1FF;
+    border-bottom: 1px solid rgba(13, 110, 253, 0.3);
 }
 
 .chart-actions .btn {
@@ -931,17 +1125,17 @@ p.text-muted {
 }
 
 .topic-mastery-list::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: rgba(13, 17, 23, 0.5);
     border-radius: 3px;
 }
 
 .topic-mastery-list::-webkit-scrollbar-thumb {
-    background: #888;
+    background: rgba(67, 97, 238, 0.4);
     border-radius: 3px;
 }
 
 .topic-mastery-list::-webkit-scrollbar-thumb:hover {
-    background: #555;
+    background: rgba(67, 97, 238, 0.7);
 }
 </style>
 
@@ -951,6 +1145,18 @@ p.text-muted {
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
+// ===== Chart.js 暗色主题全局配置 =====
+Chart.defaults.color = '#C9D1D9';
+Chart.defaults.borderColor = 'rgba(240, 246, 252, 0.1)';
+Chart.defaults.font.family = "'Noto Sans SC', sans-serif";
+Chart.defaults.font.size = 12;
+Chart.defaults.plugins.legend.labels.color = '#E6EDF3';
+Chart.defaults.plugins.legend.labels.usePointStyle = true;
+Chart.defaults.plugins.legend.labels.pointStyleWidth = 10;
+Chart.defaults.scale.grid.color = 'rgba(240, 246, 252, 0.06)';
+Chart.defaults.scale.grid.drawBorder = false;
+Chart.defaults.scale.ticks.color = '#8B949E';
+
 // 数字动画效果
 function animateCounter(element) {
     const target = parseFloat(element.textContent);

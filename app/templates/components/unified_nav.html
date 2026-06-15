@@ -278,6 +278,37 @@
         </a>
         
         {% if current_user.is_authenticated %}
+            {% if current_user.is_teacher() %}
+            <!-- ========== 教师端导航 ========== -->
+            <a href="{{ url_for('intelligent_assistant.index') }}" class="nav-item {% if 'intelligent' in request.endpoint %}active{% endif %}">
+                <span class="nav-icon"><i class="fas fa-robot"></i></span>
+                <span>智能问答</span>
+            </a>
+            
+            <a href="{{ url_for('analysis.student_portrait') }}" class="nav-item {% if 'student_portrait' in request.endpoint %}active{% endif %}">
+                <span class="nav-icon"><i class="fas fa-user-group"></i></span>
+                <span>群像分析</span>
+                <span class="nav-badge">教师</span>
+            </a>
+            
+            <a href="{{ url_for('analysis.advanced_analysis') }}" class="nav-item {% if 'advanced_analysis' in request.endpoint %}active{% endif %}">
+                <span class="nav-icon"><i class="fas fa-magnifying-glass-chart"></i></span>
+                <span>高级分析</span>
+                <span class="nav-badge">教师</span>
+            </a>
+            
+            <a href="{{ url_for('analysis.pro_dashboard') }}" class="nav-item {% if request.endpoint == 'analysis.pro_dashboard' %}active{% endif %}">
+                <span class="nav-icon"><i class="fas fa-chart-bar"></i></span>
+                <span>数据总览</span>
+                <span class="nav-badge">教师</span>
+            </a>
+            
+            <a href="{{ url_for('analysis.learning_report') }}" class="nav-item {% if 'report' in request.endpoint %}active{% endif %}">
+                <span class="nav-icon"><i class="fas fa-chart-line"></i></span>
+                <span>学习报告</span>
+            </a>
+            {% else %}
+            <!-- ========== 学生端导航 ========== -->
             <a href="{{ url_for('intelligent_assistant.index') }}" class="nav-item {% if 'intelligent' in request.endpoint %}active{% endif %}">
                 <span class="nav-icon"><i class="fas fa-robot"></i></span>
                 <span>智能问答</span>
@@ -317,13 +348,6 @@
                 <span class="nav-icon"><i class="fas fa-tasks"></i></span>
                 <span>学习计划</span>
             </a>
-            
-            {% if current_user.is_teacher() %}
-                <a href="{{ url_for('analysis.pro_dashboard') }}" class="nav-item {% if request.endpoint == 'analysis.pro_dashboard' %}active{% endif %}">
-                    <span class="nav-icon"><i class="fas fa-chart-bar"></i></span>
-                    <span>数据分析</span>
-                    <span class="nav-badge">教师</span>
-                </a>
             {% endif %}
         {% endif %}
     </div>
@@ -340,15 +364,22 @@
             <div class="nav-avatar">
                 {{ current_user.username[0].upper() }}
                 <div class="nav-dropdown">
-                    <a href="{{ url_for('analysis.learning_report') }}" class="nav-dropdown-item">
-                        <i class="fas fa-user-circle"></i> 个人报告
-                    </a>
-                    <a href="{{ url_for('student.learning_plan') }}" class="nav-dropdown-item">
-                        <i class="fas fa-clipboard-list"></i> 学习计划
-                    </a>
                     {% if current_user.is_teacher() %}
                         <a href="{{ url_for('analysis.pro_dashboard') }}" class="nav-dropdown-item">
-                            <i class="fas fa-chart-bar"></i> 教师仪表盘
+                            <i class="fas fa-chart-bar"></i> 数据总览
+                        </a>
+                        <a href="{{ url_for('analysis.student_portrait') }}" class="nav-dropdown-item">
+                            <i class="fas fa-user-group"></i> 群像分析
+                        </a>
+                        <a href="{{ url_for('analysis.advanced_analysis') }}" class="nav-dropdown-item">
+                            <i class="fas fa-magnifying-glass-chart"></i> 高级分析
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('analysis.learning_report') }}" class="nav-dropdown-item">
+                            <i class="fas fa-user-circle"></i> 个人报告
+                        </a>
+                        <a href="{{ url_for('student.learning_plan') }}" class="nav-dropdown-item">
+                            <i class="fas fa-clipboard-list"></i> 学习计划
                         </a>
                     {% endif %}
                     <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 8px 0;">

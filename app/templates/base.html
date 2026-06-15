@@ -1333,6 +1333,40 @@
                     <span>首页</span>
                 </a>
             </li>
+            {% if current_user.is_authenticated and current_user.is_teacher() %}
+            <!-- ========== 教师端导航 ========== -->
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint and 'intelligent' in request.endpoint %}active{% endif %}" href="{{ url_for('intelligent_assistant.index') }}">
+                    <i class="fas fa-robot"></i>
+                    <span>智能问答</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint and 'student_portrait' in request.endpoint %}active{% endif %}" href="{{ url_for('analysis.student_portrait') }}">
+                    <i class="fas fa-user-group"></i>
+                    <span>群像分析</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint and 'advanced' in request.endpoint %}active{% endif %}" href="{{ url_for('analysis.advanced_analysis') }}">
+                    <i class="fas fa-magnifying-glass-chart"></i>
+                    <span>高级分析</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint and 'pro_dashboard' in request.endpoint %}active{% endif %}" href="{{ url_for('analysis.pro_dashboard') }}">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>数据总览</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint and 'analysis' in request.endpoint and 'report' in request.endpoint %}active{% endif %}" href="{{ url_for('analysis.learning_report') }}">
+                    <i class="fas fa-chart-line"></i>
+                    <span>学习报告</span>
+                </a>
+            </li>
+            {% else %}
+            <!-- ========== 学生端导航 ========== -->
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint and 'intelligent' in request.endpoint %}active{% endif %}" href="{{ url_for('intelligent_assistant.index') }}">
                     <i class="fas fa-robot"></i>
@@ -1363,12 +1397,7 @@
                     <span>测验题库</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link {% if request.endpoint == 'main.competition_readiness' %}active{% endif %}" href="{{ url_for('main.competition_readiness') }}">
-                    <i class="fas fa-award"></i>
-                    <span>赛题对照</span>
-                </a>
-            </li>
+            {% endif %}
         </ul>
 
         <div class="navbar-actions">
@@ -1392,8 +1421,15 @@
                     </div>
                     <i class="fas fa-chevron-down" style="font-size: 0.7rem; color: var(--text-muted);"></i>
                 </div>
-                <ul class="dropdown-menu dropdown-menu-end" style="background: var(--bg-elevated, #1c2128); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); margin-top: 10px; min-width: 180px;">
+                <ul class="dropdown-menu dropdown-menu-end" style="background: var(--bg-elevated, #1c2128); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); margin-top: 10px; min-width: 200px;">
                     <li><a class="dropdown-item" href="{{ url_for('main.dashboard') }}" style="color: var(--text-primary); padding: 10px 16px;"><i class="fas fa-user me-2"></i>个人中心</a></li>
+                    {% if current_user.is_authenticated and current_user.is_teacher() %}
+                    <li><a class="dropdown-item" href="{{ url_for('analysis.pro_dashboard') }}" style="color: var(--text-primary); padding: 10px 16px;"><i class="fas fa-chart-bar me-2"></i>数据总览</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('analysis.student_portrait') }}" style="color: var(--text-primary); padding: 10px 16px;"><i class="fas fa-user-group me-2"></i>群像分析</a></li>
+                    {% else %}
+                    <li><a class="dropdown-item" href="{{ url_for('analysis.learning_report') }}" style="color: var(--text-primary); padding: 10px 16px;"><i class="fas fa-chart-line me-2"></i>学习报告</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('student.learning_plan') }}" style="color: var(--text-primary); padding: 10px 16px;"><i class="fas fa-calendar-alt me-2"></i>学习计划</a></li>
+                    {% endif %}
                     <li><hr class="dropdown-divider" style="border-color: rgba(255,255,255,0.1);"></li>
                     <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}" style="color: #f87171; padding: 10px 16px;"><i class="fas fa-sign-out-alt me-2"></i>退出登录</a></li>
                     <li><a class="dropdown-item" href="{{ url_for('auth.login') }}" style="color: var(--text-secondary); padding: 10px 16px;"><i class="fas fa-right-left me-2"></i>切换账号</a></li>
