@@ -2,7 +2,7 @@
 
 **项目名称**：大模智学  
 **赛题名称**：A3-基于大模型的个性化资源生成与学习多智能体系统开发  
-**版本**：v2.0  
+**版本**：v3.0  
 **最后更新**：2026-06-15
 
 ---
@@ -11,111 +11,151 @@
 
 ### 1.1 系统定位
 
-"大模智学"是一个面向高校大学生的个性化学习多智能体系统，围绕软件杯A3赛题五大核心能力设计：
-1. 对话式学习画像构建
-2. 多智能体协同资源生成
-3. 个性化学习路径规划与资源推送
-4. 智能辅导与即时答疑
-5. 学习效果评估与动态优化
+"大模智学"是一个面向高校大学生的个性化学习多智能体系统，围绕软件杯A3赛题五大核心能力设计：对话式学习画像构建、多智能体协同资源生成、个性化学习路径规划与资源推送、智能辅导与即时答疑、学习效果评估与动态优化。
 
 系统以Web应用为载体，覆盖课程教学辅助、自主学习辅导、知识库RAG问答、多模态资源生成与学习效果追踪等高校核心场景。
 
-### 1.2 核心理念
+### 1.2 核心理念与技术哲学
 
-本系统不是"一个模型回答所有问题"的UI壳，而是将**学习画像**作为中心数据资产，让7类Agent分工协作，贯穿"对话了解学生→定制资源→规划路径→辅导答疑→评估反馈→动态调整"的完整学习闭环。
+本系统的本质不是"一个模型回答所有问题"的UI壳，而是将**学习画像**作为中心数据资产，让7类Agent分工协作，贯穿"对话了解学生→定制资源→规划路径→辅导答疑→评估反馈→动态调整"的完整学习闭环。
+
+**关键设计哲学**：
+
+| 原则 | 说明 | 实现体现 |
+|------|------|---------|
+| **画像驱动** | 所有智能体的输出都应反映学生的个体差异 | 10维画像注入所有Agent的System Prompt |
+| **设计取证而非预测** | RAG模式优先于LLM自由生成 | temperature=0.2, System Prompt禁止编造 |
+| **优雅降级** | 任何组件失败都不应导致系统不可用 | 每个Agent有独立降级策略，多层兜底 |
+| **可解释优先** | 系统行为应可追溯、可验证 | execution_log、引用来源、Mock检测 |
+| **工程化优先** | 竞赛代码也应有生产级质量 | 类型标注、单例模式、配置分离、Docker化 |
+
+### 1.3 技术选型与决策理由
+
+| 技术选择 | 决策理由 | 替代方案 | 为何不选替代 |
+|---------|---------|---------|------------|
+| **Python/Flask** | 生态成熟、文档完善、学习成本低、A3赛题主流选择 | Django/FastAPI | Django过重不适合竞赛演示；FastAPI异步优势在单机场景不明显 |
+| **SQLite** | 零配置启动、便携单文件、SQLAlchemy ORM可平滑迁移 | PostgreSQL/MySQL | 外部数据库服务增加部署复杂度，竞赛演示场景不需要 |
+| **Jinja2模板渲染** | Flask内置，服务端渲染无前端构建步骤 | React/Vue SPA | SPA需要额外构建工具链和API层，增加复杂度 |
+| **Bootstrap 5 CDN** | 快速构建专业UI、响应式、丰富组件 | Tailwind CSS | Tailwind需要构建步骤，竞赛演示更看重开发速度 |
+| **ECharts CDN** | 雷达图/趋势图开箱即用、中文文档完善 | Chart.js/D3.js | Chart.js无内置雷达图；D3.js学习曲线陡峭 |
+| **Mermaid.js CDN** | 思维导图仅需文本语法、CDN引入即用 | draw.io/vis.js | 其他方案需要额外服务或构建步骤 |
+| **scikit-learn TF-IDF** | 零额外依赖、中英文混合友好、性能足够 | 专用搜索引擎(ES) | ES需要Java运行时和额外服务，竞赛场景不适用 |
+| **ThreadPoolExecutor** | Python标准库、无需额外依赖、4线程够用 | asyncio/celery | 竞赛演示单机场景，多线程即可满足并行需求 |
 
 ---
 
-## 2. 需求分析
+## 2. 需求分析与赛题对标
 
-### 2.1 用户痛点
+### 2.1 用户痛点深度分析
 
-1. 高校课程内容多、节奏快，学生难以在海量资源中找到适合自己的学习材料
-2. 统一化教学无法兼顾基础差异与学习偏好差异（视觉型/听觉型/动手型）
-3. 传统学习计划静态、无反馈，不会随学习效果变化动态调整
-4. 通用AI聊天工具缺乏课程资料支撑，回答不可追溯，存在知识幻觉风险
-5. 测评结果常停留在总分层面，难以形成针对性改进方案
+| 痛点 | 根因 | 传统解决方案的局限 | 本系统创新应对 |
+|------|------|------------------|--------------|
+| 资源碎片化 | 课程材料分散在多平台、版本混乱 | LMS(如Moodle)仅做文件存放，不支持语义检索 | 统一知识库+RAG语义检索 |
+| 答疑时延高 | 师生比悬殊，教师无法7×24响应 | 教学论坛/邮件响应慢 | AI+知识库即时答疑，带来源引用 |
+| 教学一刀切 | 200+学生难差异化教学 | 分层教学仅分2-3层 | 10维画像实现200+种个性化路径 |
+| 测评浅层化 | 考试只给总分，无法定位薄弱点 | 仅统计各题正确率 | 8维雷达图+知识点级诊断+回流调整 |
+| AI幻觉风险 | LLM可能生成与教材矛盾的回答 | 禁用AI或接受风险 | RAG六层保障+教师材料优先 |
+| 学习持续动力不足 | 缺乏阶段性反馈和激励 | 考勤/平时分外部驱动 | 5级里程碑系统+内部动机激发 |
 
-### 2.2 赛题对标
+### 2.2 赛题逐项对标矩阵
 
-| 赛题要求 | 本系统实现 |
-|---------|-----------|
-| 对话式学习画像自主构建 | `ProfileBuilderAgent`：10维画像，LLM驱动对话，关键词+规则匹配 |
-| 多智能体协同资源生成 | `ResourceGeneratorAgent`：6种SystemPrompt，并行生成，画像注入 |
-| 个性化学习路径规划 | `LearningPlannerAgent`：优先级排序，渐进难度曲线，5级里程碑 |
-| 智能辅导 | `TutorAgent`：6种答案类型，流式SSE，上下文保持 |
-| 学习效果评估 | `LearningEvaluatorAgent`：8维加权指标，ECharts雷达图，趋势分析 |
-| 知识库与防幻觉 | `KnowledgeBaseAgent`：8格式解析，TF-IDF/ChromaDB双后端，LLM生成+引用 |
-| 课程知识库样例 | 计算机组成原理6文件完整样例包 |
+| 赛题要求 | 系统实现 | 关键文件 | 完成度 |
+|---------|---------|---------|:----:|
+| 对话式学习画像自主构建 | ProfileBuilderAgent: 10维画像+LLM对话+关键词匹配+SQLite持久化 | `profile_agent.py` | ✅ 完整 |
+| 多智能体协同资源生成(≥5种) | ResourceGeneratorAgent: 6种资源+6套SystemPrompt+并行生成 | `resource_agent.py` | ✅ 完整 |
+| 个性化学习路径规划与资源推送 | LearningPlannerAgent: 优先级排序+渐进难度+5级里程碑+动态调整 | `planner_agent.py` | ✅ 完整 |
+| 智能辅导与即时答疑 | TutorAgent: 6种答案+流式SSE+上下文保持+追问纠错 | `tutor_agent.py` | ✅ 完整 |
+| 学习效果评估 | LearningEvaluatorAgent: 8维加权+ECharts雷达图+趋势+回流 | `evaluator_agent.py` | ✅ 完整 |
+| 知识库与防幻觉 | KnowledgeBaseAgent: 8格式解析+双后端+LLM生成+引用+Mock过滤 | `knowledge_agent.py` | ✅ 完整 |
+| 提供完整课程知识库样例 | 计算机组成原理6文件+全链路验证JSON证据 | `data/knowledge_base/` | ✅ 完整 |
+| 现代AI产品交互规范 | Bootstrap 5+ECharts+Mermaid+流式SSE+进度提示 | `templates/`(49个) | ✅ 完整 |
+| 工程化部署 | Docker+Windows一键启动+演示账号自动修正 | `Dockerfile`/`start.bat` | ✅ 完整 |
+| 配套文档 | 8类Markdown文档+PPTX+证据包 | `docs/` | ✅ 完整 |
 
 ---
 
-## 3. 总体架构
+## 3. 系统总体架构
 
-### 3.1 技术架构（四层模型）
+### 3.1 四层技术架构
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                    表现层 (Templates)                 │
-│  Bootstrap 5 + ECharts + Mermaid.js + Font Awesome  │
-│  49个HTML模板覆盖所有页面                             │
-├─────────────────────────────────────────────────────┤
-│                    路由层 (Routes)                    │
-│  Flask Blueprint × 10: main/auth/quiz/analysis/     │
-│  student/intelligent_assistant/test/nav/features/    │
-│  extra_features/agent_system                        │
-├─────────────────────────────────────────────────────┤
-│                  智能体层 (Multi-Agent)               │
-│  AgentCoordinator ← 单例协调器                        │
-│  ├── ProfileBuilderAgent                            │
-│  ├── ResourceGeneratorAgent                         │
-│  ├── LearningPlannerAgent                           │
-│  ├── TutorAgent                                     │
-│  ├── LearningEvaluatorAgent                         │
-│  ├── KnowledgeBaseAgent                             │
-│  └── LLM Client (BaseLLM → OpenAI/Ollama)           │
-├─────────────────────────────────────────────────────┤
-│                    数据层 (Models)                    │
-│  SQLAlchemy ORM + SQLite                            │
-│  ├── StudentProfileModel                            │
-│  ├── LearningResourceModel                          │
-│  ├── LearningPathModel                              │
-│  ├── AssessmentReportModel                          │
-│  ├── KnowledgeDocumentModel                         │
-│  ├── KnowledgeChunkModel                            │
-│  ├── DigitalHumanVideoTaskModel                     │
-│  └── ChatHistoryModel                               │
-└─────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                        表现层 (Presentation)                      │
+│  Bootstrap 5 + ECharts 5 + Mermaid.js + Font Awesome 6           │
+│  Jinja2模板引擎 + 49个HTML模板 + 自定义深墨蓝科技风CSS              │
+│  响应式布局 / 交互式可视化 / 流式SSE渲染 / 卡片式资源展示           │
+├──────────────────────────────────────────────────────────────────┤
+│                        路由层 (Routes)                            │
+│  Flask Blueprint × 10 模块化路由                                  │
+│  ├── main_bp (首页/赛题对照/成就/通知/笔记)                        │
+│  ├── auth_bp (登录/注册/登出)                                     │
+│  ├── quiz_bp (题库管理/答题/提交/错题本)                           │
+│  ├── analysis_bp (数据分析/报告/画像/排名)                         │
+│  ├── student_bp (学习计划/专项练习/详情)                           │
+│  ├── intelligent_bp (智能问答主页面)                               │
+│  ├── agent_bp (多智能体系统API)                                    │
+│  ├── test_bp (能力测试中心)                                        │
+│  ├── features_bp (功能展示)                                        │
+│  └── extra_bp (扩展功能/PPT生成)                                   │
+├──────────────────────────────────────────────────────────────────┤
+│                      智能体层 (Multi-Agent)                        │
+│  AgentCoordinator (单例) ← 全局调度中心                            │
+│  ├── ProfileBuilderAgent     ← 10维画像 + LLM对话                 │
+│  ├── ResourceGeneratorAgent  ← 6种资源 + 并行生成                  │
+│  ├── LearningPlannerAgent    ← 路径规划 + 动态调整                 │
+│  ├── TutorAgent              ← 6种答案 + 流式SSE                   │
+│  ├── LearningEvaluatorAgent  ← 8维评估 + 数据回流                  │
+│  ├── KnowledgeBaseAgent      ← RAG全链路 (563行)                   │
+│  └── LLM Client              ← BaseLLM → OpenAI/Ollama            │
+│                                                                   │
+│  ContentSafetyFilter / HallucinationDetector (安全横切层)          │
+├──────────────────────────────────────────────────────────────────┤
+│                        数据层 (Data)                               │
+│  SQLAlchemy ORM + SQLite (instance/quiz_system.db)                │
+│  ├── StudentProfileModel       (student_profiles_agent)            │
+│  ├── LearningResourceModel     (learning_resources_agent)          │
+│  ├── LearningPathModel         (learning_paths_agent)              │
+│  ├── AssessmentReportModel     (assessment_reports_agent)          │
+│  ├── KnowledgeDocumentModel    (knowledge_documents_agent)         │
+│  ├── KnowledgeChunkModel       (knowledge_chunks_agent)            │
+│  ├── ChatHistoryModel          (chat_history_agent)                │
+│  ├── DigitalHumanVideoTaskModel (digital_human_video_tasks)        │
+│  └── User / Quiz / Feature等模型 (基础业务模型)                     │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 ### 3.2 路由与蓝图体系
 
-| 蓝图 | URL前缀 | 核心职责 |
-|------|--------|---------|
-| `main_bp` | `/` | 首页、赛题对照、成就中心、通知中心、笔记系统 |
-| `auth_bp` | `/auth` | 登录、注册、注销 |
-| `quiz_bp` | `/quiz` | 题库管理、答题、提交、错题本 |
-| `analysis_bp` | `/analysis` | 数据分析、学习报告、画像展示、排名 |
-| `student_bp` | `/student` | 学习计划、专项练习、学习详情 |
-| `intelligent_bp` | `/intelligent-assistant` | 智能问答主页面 |
-| `agent_bp` | `/agent` | 多智能体系统API端点 |
-| `test_bp` | `/test` | 能力测试中心 |
-| `features_bp` | `/features` | 功能展示页 |
-| `extra_bp` | `/extra` | 扩展功能（PPT生成等） |
+| 蓝图变量 | URL前缀 | 核心职责 | 主要端点 |
+|---------|--------|---------|---------|
+| `main_bp` | `/` | 首页、赛题对照、成就中心、通知中心 | `/`, `/competition-readiness`, `/achievements` |
+| `auth_bp` | `/auth` | 登录、注册、注销 | `/auth/login`, `/auth/register`, `/auth/logout` |
+| `quiz_bp` | `/quiz` | 题库管理、答题提交、错题本 | `/quiz/`, `/quiz/create`, `/quiz/submit` |
+| `analysis_bp` | `/analysis` | 数据分析、学习报告、画像展示 | `/analysis/`, `/analysis/report`, `/analysis/portrait` |
+| `student_bp` | `/student` | 学习计划、专项练习、详情 | `/student/learning-plan`, `/student/practice` |
+| `intelligent_bp` | `/intelligent-assistant` | 智能问答主页面 | `/intelligent-assistant/` |
+| `agent_bp` | `/agent` | 多智能体系统API（核心） | `/agent/init`, `/agent/profile`, `/agent/resources`, `/agent/plan`, `/agent/ask`, `/agent/stream`, `/agent/evaluate`, `/agent/status`, `/agent/reset`, `/agent/export` |
+| `test_bp` | `/test` | 能力测试中心 | `/test/assessment` |
+| `features_bp` | `/features` | 功能展示页 | `/features/` |
+| `extra_bp` | `/extra` | 扩展功能 | `/extra/ppt-generate` |
 
-### 3.3 核心页面清单
+### 3.3 核心页面路由映射
 
-| 页面 | 模板路径 | URL路径 | 核心功能 |
-|------|---------|---------|---------|
-| 首页 | `index.html` | `/` | 系统入口与能力概览 |
-| 登录 | `auth/login.html` | `/auth/login` | 用户认证 |
-| 智能问答 | `intelligent_assistant/index.html` | `/intelligent-assistant` | 多智能体协同中枢 |
-| 学习画像 | `agent_system/learning_agent.html` | `/agent-system/learning-agent` | 对话式画像构建 |
-| 能力测试 | `test/assessment_pro.html` | `/test/assessment` | 专业化测评 |
-| 学习报告 | `analysis/learning_report.html` | `/analysis/report` | 8维雷达图+趋势 |
-| 学习计划 | `student/learning_plan.html` | `/student/learning-plan` | 甘特图+日历+列表 |
-| 学生画像 | `analysis/student_portrait.html` | `/analysis/portrait` | 画像详情展示 |
-| 赛题对照 | `competition_readiness.html` | `/competition-readiness` | 赛题完成度总览 |
+| 页面名称 | 模板路径 | URL | 访问角色 | 核心展示内容 |
+|---------|---------|-----|---------|------------|
+| 首页 | `index.html` | `/` | 全部 | 系统入口、能力概览 |
+| 登录页 | `auth/login.html` | `/auth/login` | 未登录 | 登录表单、自动填充 |
+| 智能问答 | `intelligent_assistant/index.html` | `/intelligent-assistant` | 全部 | 多智能体协同中枢 |
+| 学习画像 | `agent_system/learning_agent.html` | `/agent-system/learning-agent` | 学生 | 对话式画像构建 |
+| 能力测试 | `test/assessment_pro.html` | `/test/assessment` | 学生 | 双方向专业化测评 |
+| 学习报告 | `analysis/learning_report.html` | `/analysis/report` | 学生 | 8维雷达图+趋势 |
+| 学习计划 | `student/learning_plan.html` | `/student/learning-plan` | 学生 | 甘特图+日历+列表 |
+| 学生画像 | `analysis/student_portrait.html` | `/analysis/portrait` | 学生 | 10维画像详情 |
+| 教师仪表盘 | `teacher_dashboard.html` | `/teacher_dashboard` | 教师 | 班级数据分析 |
+| 学生管理 | `student/list.html` | `/student/list` | 教师/管理 | 学生列表与搜索 |
+| 赛题对照 | `competition_readiness.html` | `/competition-readiness` | 全部 | 赛题完成度总览 |
+| 成就中心 | `achievement_center.html` | `/achievements` | 学生 | 徽章与里程碑 |
+| 错题本 | (测试结果内嵌) | 测试结果页 | 学生 | 错题汇总与重练 |
 
 ---
 
@@ -125,52 +165,72 @@
 
 **文件**：`app/multi_agent/coordinator.py`
 
-#### 4.1.1 设计模式与架构
-
-协调器采用**单例模式**管理全局智能体实例：
+#### 4.1.1 单例模式设计
 
 ```python
 _coordinator_instance: Optional[AgentCoordinator] = None
 
 def get_coordinator() -> AgentCoordinator:
+    """全局单例协调器，确保所有请求共享同一组Agent实例"""
     global _coordinator_instance
     if _coordinator_instance is None:
         _coordinator_instance = AgentCoordinator()
     return _coordinator_instance
 ```
 
+**为什么用单例**：
+1. **状态一致性**：所有HTTP请求操作同一组Agent实例，避免会话分裂
+2. **资源节省**：避免每次请求重新初始化LLM客户端和向量数据库连接
+3. **执行日志连续性**：跨请求的execution_log记录在同一实例中
+4. **竞赛演示友好**：单进程模型简化部署和调试
+
 #### 4.1.2 核心职责
 
-1. **会话管理**：每个用户会话通过 `session_id` (UUID4) 唯一标识，维护画像/资源/路径/日志的状态生命周期
-2. **工作流编排**：按"画像→资源→路径→问答→评估"的顺序编排Agent调用
-3. **并行调度**：资源生成使用 `ThreadPoolExecutor(max_workers=4)` 并行调用
-4. **执行追溯**：每次Agent调用记录时间戳、Agent名称、操作、参数到 `execution_log`
+| 职责 | 实现方式 | 关键代码 |
+|------|---------|---------|
+| 会话管理 | `sessions: Dict[str, Session]` 字典，session_id(UUID4)为键 | `initialize_session()` / `reset_session()` |
+| 工作流编排 | 按"画像→资源→路径→问答→评估"的顺序编排Agent调用链 | `orchestrate()` 方法 |
+| 并行调度 | `ThreadPoolExecutor(max_workers=4)` 资源生成并行 | `generate_learning_resources()` |
+| 执行追溯 | `execution_log: List[Dict]` 记录每次Agent调用 | 每条含{timestamp, agent, action, params, result} |
+| 生命周期管理 | 负责7个Agent的创建、持有和销毁 | `__init__` 中初始化所有Agent |
 
-#### 4.1.3 数据流
-
-```
-用户请求 → coordinator.orchestrate()
-           ├── 检查前置条件 (如: 画像是否存在)
-           ├── 调用目标Agent
-           ├── 记录 execution_log {timestamp, agent, action, params}
-           ├── 更新协调器状态 (current_profile/resources/path)
-           └── 返回统一响应格式 {结果, 状态, 错误}
-```
-
-#### 4.1.4 会话生命周期
+#### 4.1.3 会话生命周期
 
 ```
+[ 初始化阶段 ]
 initialize_session(user_id, username)
-  → reset all agents
-  → profile_agent.init_profile()
-  → 返回 {session_id, profile, welcome_message, suggested_questions}
+  ├── 生成 session_id = str(uuid4())
+  ├── 创建 Session 对象
+  ├── 初始化 ProfileBuilderAgent
+  │   └── profile_agent.init_profile(user_id, username)
+  ├── sessions[session_id] = session
+  └── 返回 {session_id, profile, welcome_message, suggested_questions}
 
-... 用户操作 ...
+[ 使用阶段 ]
+... 各种Agent调用 (profile/resources/plan/ask/evaluate) ...
 
+[ 查询阶段 ]
+get_system_status()
+  └── 返回: {
+      session_id, user_id, username,
+      profile_confidence, resources_count, path_steps_count,
+      agents_status: {profile_builder, resource_generator, ...},
+      execution_log_length
+  }
+
+[ 重置阶段 ]
 reset_session()
-  → 重建所有Agent实例
-  → 清空所有状态
-  → 返回 {message, new_session_id}
+  ├── 销毁所有Agent实例
+  ├── 清空 sessions 字典
+  └── 重新初始化 → 返回新的 session_id
+
+[ 导出阶段 ]
+export_session_data()
+  └── 返回: {
+      session_id, user_id, username,
+      profile(完整10维), resources(所有已生成),
+      path(完整路径), execution_log(完整日志)
+  }
 ```
 
 ---
@@ -179,71 +239,42 @@ reset_session()
 
 **文件**：`app/multi_agent/profile_agent.py`
 
-#### 4.2.1 设计目标
+#### 4.2.1 完整工作流
 
-通过自然语言多轮对话自动构建学生的10维学习画像，无需表单填写。
+已在前文SRS §4.1.3详述，此处补充设计决策：
 
-#### 4.2.2 完整工作流
+**为什么用关键词匹配+LLM双重机制？**
+- LLM推断更智能但依赖网络/API，且存在"过度解读"风险
+- 关键词匹配零延迟、100%可解释，但不理解复杂语义
+- 两者互补：关键词匹配提供确定性的基准推断，LLM提供语义级细粒度理解
 
-```
-用户消息 → ContentSafetyFilter.filter()
-          ├── 不安全 → 返回拒绝响应
-          └── 安全 ↓
-          → conversation_history.append({role:user, content})
-          → _build_context(): 组装"当前学生+已知信息"上下文
-          → 构建 messages = [SYSTEM_PROMPT] + [问候语] + [历史对话] + [上下文] + [用户消息]
-          → LLM.chat(messages, temperature=0.8)
-            ├── 成功 → 获取响应文本
-            └── 失败 → _get_fallback_response()
-          → _extract_profile_update(response):
-            ├── re.search(r'\{[^{}]*\}', response) 提取JSON
-            ├── 反射更新 self.profile 对应字段
-            ├── 更新 extracted_info
-            └── confidence = len(extracted_info) / 10
-          → _extract_keywords(response):
-            ├── 认知风格匹配:
-            │   {visual: [看,图,画,视觉], verbal: [读,写,说],
-            │    auditory: [听,声音,音频], kinesthetic: [做,动手,实践]}
-            └── 学习速度匹配:
-                {fast: [快,迅速], slow: [慢,需要时间,反复]}
-          → _generate_suggested_questions(): 基于缺失维度生成追问
-          → conversation_history.append({role:assistant, content:response})
-          → 返回 {response, profile_update, suggested_questions, profile}
-```
+**为什么confidence = len(extracted_info)/10？**
+- 简单直观：10个维度各贡献0.1置信度
+- 渐进式：鼓励多轮对话逐步完善，而非一次填完
+- 可监控：前端可展示"画像完成度40%"，激励学生继续对话
 
-#### 4.2.3 System Prompt设计（核心）
+#### 4.2.2 关键代码片段
 
-```
-角色: 专业教育顾问智能体
-原则: 苏格拉底式提问 → 画像动态更新 → 自然流畅对话
-维度: 10个 (知识基础/认知风格/易错点/学习速度/兴趣/目标/偏好/薄弱/习惯/时间)
-输出: 1.理解和建议 2.更新画像(JSON) 3.建议下一轮问题
-```
-
-#### 4.2.4 核心算法
-
-**关键词匹配推断**：使用中文关键词集合进行认知风格和学习速度的枚举匹配
-
-**置信度计算**：
 ```python
-self.profile.confidence = min(1.0, len(self.extracted_info) / 10)
-```
-每成功提取一个维度，置信度增加0.1，上限1.0
-
-**建议问题生成**：遍历所有维度，对缺失维度生成对应追问，最多3个
-
-#### 4.2.5 输入输出规范
-
-**输入**：`user_message: str` — 任意长度的自然语言文本
-
-**输出**：
-```json
-{
-  "response": "AI回复文本",
-  "profile_update": {"认知风格": "visual", "学习速度": "medium", ...},
-  "suggested_questions": ["追问1", "追问2", "追问3"],
-  "profile": { /* 完整10维画像 */ }
-}
+def _extract_keywords(self, response: str) -> None:
+    """从LLM响应中提取认知风格和学习速度"""
+    # 认知风格关键词集 (中英文)
+    cognitive_keywords = {
+        'visual': ['看', '图', '画', '视觉', '眼睛', '图表', '可视化', '视频'],
+        'verbal': ['读', '写', '说', '文字', '书籍', '阅读', '文本', '笔记'],
+        'auditory': ['听', '声音', '音频', '讲', '口头', '讲座', '播客'],
+        'kinesthetic': ['做', '动手', '实践', '试', '操作', '试验', '实验']
+    }
+    # 学习速度关键词集
+    speed_keywords = {
+        'fast': ['快', '迅速', '很快', '一下子', '不难'],
+        'slow': ['慢', '需要时间', '反复', '仔细', '花时间', '困难']
+    }
+    
+    resp_lower = response.lower()
+    # 对每种认知风格计算关键词命中数，取最高者
+    # 对学习速度同理
+    # 仅在命中数超过阈值时才更新画像(避免误判)
 ```
 
 ---
@@ -252,327 +283,139 @@ self.profile.confidence = min(1.0, len(self.extracted_info) / 10)
 
 **文件**：`app/multi_agent/resource_agent.py`
 
-#### 4.3.1 设计目标
+#### 4.3.1 6套System Prompt设计原理
 
-根据学生画像和指定知识点，利用LLM生成6种类型的个性化学习资源。本Agent是系统"资源多样性"的核心体现。
+| 资源类型 | Prompt设计核心 | 关键约束 | 为何这样设计 |
+|---------|-------------|---------|------------|
+| COURSE_DOCUMENT | 资深教育专家+6段式结构 | 800-1500字，Markdown | 结构化确保完整覆盖，字数控制保证可读性 |
+| MIND_MAP | 知识可视化专家+Mermaid语法 | 3-4层，每节点1-5词 | 层级过深不可读，过浅信息量不足 |
+| EXERCISES | 出题专家+分层难度 | 5题型×3难度级 | 题型和难度分层匹配不同学习阶段 |
+| EXTENDED_READING | 学术导师+资源推荐 | 3-5个，含链接 | 数量适中避免选择困难，含链接可直接访问 |
+| VIDEO_SCRIPT | 视频策划+分镜格式 | 4镜头，3-5分钟 | 标准教学视频结构，时长适合碎片化学习 |
+| CODE_PRACTICE | 程序员教育者+逐行注释 | PEP8，每函数≤30行 | 代码质量和可读性是教学材料的第一要求 |
 
-#### 4.3.2 6种资源的System Prompt设计
-
-每种资源类型拥有独立的System Prompt，定义了角色的专业知识、输出格式和质量标准：
-
-| 资源类型 | 角色定位 | 输出格式 | 特殊要求 |
-|---------|---------|---------|---------|
-| COURSE_DOCUMENT | 资深教育专家 | Markdown 6段式 | 800-1500字，代码块支持 |
-| MIND_MAP | 知识可视化专家 | Mermaid mindmap | 3-4层，每节点1-5词 |
-| EXERCISES | 出题专家 | JSON exercises数组 | 5种题型×3级难度 |
-| EXTENDED_READING | 学术导师 | Markdown列表 | 3-5个资源，含获取链接 |
-| VIDEO_SCRIPT | 视频内容策划 | Markdown分镜 | 4镜头结构，3-5分钟 |
-| CODE_PRACTICE | 程序员教育者 | Markdown+代码块 | 完整注释+逐行解析 |
-
-#### 4.3.3 完整生成管线
-
-```
-generate_resource(resource_type, topic, profile, additional_context=None)
-  ├── _build_prompt(): 构建个性化提示
-  │   ├── 注入学生画像信息:
-  │   │   ├── 用户名 / 认知风格 / 学习速度
-  │   │   ├── 兴趣方向 / 学习目标
-  │   │   └── 薄弱知识点 (top3) / 附加信息
-  │   └── 注入资源信息:
-  │       ├── 资源类型 / 主题
-  │       └── additional_context (如编程语言)
-  ├── messages = [SYSTEM_PROMPT[type]] + [user_prompt]
-  ├── LLM.chat(messages, temperature=0.7)
-  │   ├── 成功 → content
-  │   └── 失败 → _get_fallback_content(type, topic)
-  ├── 内容安全: ContentSafetyFilter.filter(content)
-  │   └── 不安全 → content = "[内容已过滤]"
-  ├── 幻觉检测: HallucinationDetector.check_factuality(content, topic)
-  │   └── 有警告 → content += "> ⚠️ 注意：{warnings[0]}"
-  ├── 内容清理: ContentSafetyFilter.sanitize(content)
-  └── 创建 LearningResource 对象
-      ├── resource_id = uuid4()
-      ├── title = "{topic} - {resource_type.value}"
-      ├── difficulty = _estimate_difficulty(profile):
-      │   └── fast→hard, slow→easy, else→medium
-      └── estimated_time = _estimate_time(resource_type):
-          {COURSE:15, MIND_MAP:10, EXERCISES:20,
-           READING:30, VIDEO:5, CODE:45} 分钟
-```
-
-#### 4.3.4 并行生成机制
+#### 4.3.2 降级策略深度
 
 ```python
-# Coordinator 中的并行调度
-with ThreadPoolExecutor(max_workers=4) as executor:
-    futures = {}
-    for topic in topics:
-        for res_type in resource_types:
-            future = executor.submit(
-                self.resource_agent.generate_resource,
-                res_type, topic, profile
-            )
-            futures[future] = {'topic': topic, 'type': res_type}
-    
-    for future in as_completed(futures):
-        # 每个任务独立收集，失败不影响其他任务
-```
+def _get_fallback_content(self, resource_type: ResourceType, topic: str) -> str:
+    """每个资源类型都有预定义模板，确保LLM不可用时系统仍可输出"""
+    fallbacks = {
+        ResourceType.COURSE_DOCUMENT: f"""# {topic} - 课程讲义
 
-#### 4.3.5 降级策略 `_get_fallback_content()`
+## 学习目标
+理解{topic}的核心概念、原理和应用场景。
 
-每个资源类型都有预定义的Markdown/JSON/Mermaid模板作为LLM不可用时的降级内容，确保系统在任何情况下都有基础输出。
+## 核心概念
+{topic}是计算机科学中的重要知识点...
 
-#### 4.3.6 输入输出规范
+## 详细讲解
+（该部分在LLM可用时会生成个性化内容）
 
-**输入**：`resource_type: ResourceType`, `topic: str`, `profile: StudentProfile`, `additional_context: Dict`
+## 实例解析
+此处将展示2-3个从易到难的实例...
 
-**输出**：`LearningResource` 对象，通过 `to_card()` 转为前端卡片格式：
-```json
-{
-  "id": "uuid",
-  "type": "course_document|mind_map|exercises|...",
-  "title": "主题 - 资源类型",
-  "preview": "前200字预览",
-  "full_content": "完整Markdown/Mermaid/JSON内容",
-  "topics": ["目标知识点"],
-  "difficulty": "easy|medium|hard",
-  "duration": 15,
-  "icon": "fa-file-alt|fa-project-diagram|...",
-  "color": "#4364F7|#00C9A7|..."
-}
+## 应用场景
+{topic}广泛应用于...
+
+## 拓展阅读
+建议参考教材相关章节和官方文档。
+""",
+        ResourceType.MIND_MAP: f"""mindmap
+  {topic}
+    核心概念
+      定义
+      特性
+      分类
+    关键原理
+      原理1
+      原理2
+    应用场景
+      场景A
+      场景B
+    常见问题
+      误区1
+      误区2
+""",
+        # ... 其他资源类型的降级模板
+    }
+    return fallbacks.get(resource_type, f"# {topic}\n\n（内容生成中...）")
 ```
 
 ---
 
 ### 4.4 知识库智能体 KnowledgeBaseAgent
 
-**文件**：`app/multi_agent/knowledge_agent.py` (563行)
+**文件**：`app/multi_agent/knowledge_agent.py` (563行，系统最大单文件)
 
-#### 4.4.1 设计目标
+#### 4.4.1 文档解析架构的工程决策
 
-构建完整的RAG知识库管线：文档上传→解析→分块→索引→语义检索→LLM生成回答，是系统"可信回答"的核心工程实现。
+| 决策点 | 选择 | 理由 |
+|--------|------|------|
+| DOCX解析方式 | zipfile + xml.etree | Python标准库零依赖，不需要python-docx |
+| PDF解析方式 | PyPDF2(优先)→pypdf(回退) | 兼容多种PDF格式，pypdf是PyPDF2的继任者 |
+| PPTX解析方式 | zipfile + xml.etree遍历slide.xml | 与DOCX同架构，代码复用 |
+| PPT(旧版)解析 | 二进制正则提取UTF-16LE/ASCII | 唯一可行方式，无纯Python库支持旧格式 |
+| 编码检测 | utf-8→gbk→gb18030→ignore | 覆盖中英文常见编码，ignore兜底防止崩溃 |
 
-#### 4.4.2 文档解析架构
-
-```
-extract_text(file_path, filename)
-  ├── 扩展名检测 (SUPPORTED_EXTENSIONS = {.txt, .md, .csv, .json, .docx, .pdf, .pptx, .ppt})
-  └── 按类型路由:
-      ├── .docx → _extract_docx_text()
-      │   └── ZIP打开 → word/document.xml → XML遍历 w:p → 提取w:t文本
-      ├── .pdf  → _extract_pdf_text()
-      │   └── PyPDF2/PyPDF PdfReader → 逐页 extract_text()
-      ├── .pptx → _extract_pptx_text()
-      │   └── ZIP → ppt/slides/slide*.xml → 遍历a:t节点 → 逐slide提取
-      ├── .ppt  → _extract_ppt_text()
-      │   └── 二进制正则提取 UTF-16LE ([\x20-\x7e\x80-\xff]\x00){4,}
-      │   └── ASCII补充提取 [\x20-\x7e]{6,}
-      │   └── _normalize_binary_text() 清理控制字符
-      └── 文本类 → 编码检测读取 (utf-8→gbk→gb18030→ignore)
-```
-
-#### 4.4.3 文本分块算法 `_chunk_text()`
+#### 4.4.2 智能分块算法详解
 
 ```python
-def _chunk_text(text, chunk_size=800, overlap=120):
-    # 第一步：清理多余换行
+def _chunk_text(text: str, chunk_size: int = 800, overlap: int = 120) -> List[str]:
+    """
+    参数选择理由:
+    - chunk_size=800: 约400中文字符，足以承载一个完整的概念段落
+    - overlap=120: 约15%重叠，确保跨段落的语义不丢失
+    - 切割优先级: \n > 。> ；> . — 优先在自然断句处切割
+    """
     cleaned = re.sub(r'\n{3,}', '\n\n', text).strip()
-    
-    # 第二步：滑动窗口分块
     chunks = []
     start = 0
+    
     while start < len(cleaned):
         end = min(len(cleaned), start + chunk_size)
         window = cleaned[start:end]
         
-        # 第三步：智能切割点查找（优先级: \n > 。> ；> .）
-        cut = max(window.rfind('\n'), window.rfind('。'),
-                  window.rfind('；'), window.rfind('.'))
+        # 智能切割点查找
+        cut_positions = [
+            ('\n', window.rfind('\n')),
+            ('。', window.rfind('。')),
+            ('；', window.rfind('；')),
+            ('.', window.rfind('. ')),
+        ]
         
-        # 第四步：仅当切割点足够靠后时才使用
-        if cut > chunk_size * 0.45:
-            end = start + cut + 1
+        best_cut = max(cut_positions, key=lambda x: x[1])
+        if best_cut[1] > chunk_size * 0.45:  # 仅当切割点足够靠后
+            end = start + best_cut[1] + 1
         
         chunk = cleaned[start:end].strip()
         if chunk:
             chunks.append(chunk)
         
-        # 第五步：带重叠的滑动窗口
         start = max(0, end - overlap)
     
     return chunks
 ```
 
-#### 4.4.4 双后端检索引擎
+#### 4.4.3 RAG回答生成的工程细节
 
-**后端一：TF-IDF（默认，零依赖）**
+**System Prompt设计原则**：
+1. **角色限定**："高校课程知识库问答助手"——明确领域边界
+2. **行为约束**："仅根据提供的材料回答，禁止编造"——硬约束
+3. **失败模式明确**："材料不足时明确说资料不足"——给LLM"允许说不知道"的许可
+4. **格式规范**："引用时使用[来源1]格式"——统一输出格式
 
+**Mock回答检测的必要性**：
+当LLM API不可用但返回了通用回复（如"感谢您的提问，这是一个很好的问题..."），系统需要识别并触发降级：
 ```python
-def _rank_chunks(query, chunks):
-    corpus = [chunk.content for chunk in chunks]
-    try:
-        # 字符级char_wb n-gram，中英文混合友好
-        vectorizer = TfidfVectorizer(
-            analyzer='char_wb',      # 字符边界感知
-            ngram_range=(2, 4),      # 2-4 gram
-            max_features=6000         # 特征上限
-        )
-        matrix = vectorizer.fit_transform(corpus + [query])
-        similarities = cosine_similarity(matrix[-1], matrix[:-1]).flatten()
-    except Exception:
-        # 回退：Jaccard词重叠
-        query_terms = set(tokenize(query))
-        scored = [(chunk, |query_terms ∩ tokenize(chunk.content)| / |query_terms|)]
-```
-
-**后端二：ChromaDB 向量检索（可选启用）**
-
-```python
-# 环境变量: KNOWLEDGE_RETRIEVAL_BACKEND=chroma
-def _search_with_chroma(user_id, query, top_k):
-    collection = _get_chroma_collection(user_id)  # knowledge_user_{user_id}
-    raw = collection.query(query_texts=[query], n_results=top_k)
-    # 将 ChromaDB distance 转为 similarity
-    similarity = 1 / (1 + distance)
-```
-
-**自动切换逻辑**：
-```python
-_init_retrieval_backend():
-    if preference == 'chroma':
-        try: import chromadb; 初始化PersistentClient
-        except: 回退到 tfidf
-    else:
-        默认 tfidf
-```
-
-#### 4.4.5 RAG回答生成 `_generate_rag_answer()`
-
-```python
-def _generate_rag_answer(question, contexts):
-    # 第一步：构建检索上下文
-    prompt_blocks = []
-    for i, ctx in enumerate(contexts, 1):
-        prompt_blocks.append(
-            f"[来源{i}] 文档：{ctx['document_title']}（{ctx['filename']}）\n"
-            f"片段：{ctx['content'][:900]}"
-        )
-    
-    # 第二步：构建LLM消息
-    messages = [
-        {"role": "system", "content": (
-            "你是高校课程知识库问答助手。"
-            "仅根据提供的材料回答问题，禁止编造。"
-            "材料不足时明确说资料不足。"
-            "引用时使用 [来源1] 格式。"
-        )},
-        {"role": "user", "content": (
-            f"问题：{question}\n\n"
-            f"可用材料：\n{'\n'.join(prompt_blocks)}\n\n"
-            "要求：1.先给直接答案 2.关键结论带来源标记 "
-            "3.多材料互相补充可合并 4.补学习建议"
-        )}
+def _looks_like_mock_answer(answer: str) -> bool:
+    mock_patterns = [
+        r'感谢您的提问',
+        r'这是一个很好的问题',
+        r'作为AI助手',
+        r'我无法回答',
+        r'对不起.*无法',
     ]
-    
-    # 第三步：LLM生成 (低temperature确保忠实于材料)
-    answer = LLM.chat(messages, temperature=0.2, max_tokens=900)
-    
-    # 第四步：Mock回答检测
-    if _looks_like_mock_answer(answer):
-        answer = ''  # 触发降级
-    
-    # 第五步：构建最终回答
-    if answer:
-        if '参考来源：' not in answer:
-            answer += '\n' + '参考来源：\n' + 引用列表
-        return answer
-    
-    # 第六步：降级方案 - 检索片段直接拼接
-    return '\n'.join([
-        f"基于已上传知识库，检索到 {len(contexts)} 条相关材料：",
-        *[f"{i}. {best_sentence(ctx['content'], question)} [来源{i}]"
-          for i, ctx in enumerate(contexts, 1)],
-        "建议学习路径：先阅读最高相关来源，提炼概念定义，再用练习题验证..."
-    ])
-```
-
-#### 4.4.6 关键词提取算法
-
-```python
-def _extract_keywords(text, limit=12):
-    tokens = _tokenize(text)  # 中文: [\u4e00-\u9fa5]{2,} 英文: [A-Za-z][A-Za-z0-9_+-]{1,}
-    freq = {}
-    for token in tokens:
-        if len(token) >= 2:
-            freq[token] = freq.get(token, 0) + 1
-    return sorted(freq.items(), key=lambda x: x[1], reverse=True)[:limit]
-```
-
-#### 4.4.7 输入输出规范
-
-**文件上传** `index_file(user_id, file_path, original_filename, title)`
-
-输出：
-```json
-{
-  "document": { /* KnowledgeDocumentModel.to_dict() */ },
-  "chunks": 7,
-  "deduplicated": false  // SHA256去重标志
-}
-```
-
-**检索** `search(user_id, query, top_k=5)`
-
-输出：
-```json
-{
-  "results": [{
-    "chunk_id": 1,
-    "document_id": "uuid",
-    "document_title": "文档标题",
-    "filename": "original.pdf",
-    "chunk_index": 0,
-    "score": 0.8523,
-    "content": "分块文本内容",
-    "preview": "高亮预览片段"
-  }],
-  "count": 3
-}
-```
-
-**问答** `answer(user_id, question, top_k=4)`
-
-输出：
-```json
-{
-  "answer": "LLM生成的带引用回答或材料拼接",
-  "citations": [{
-    "ref": "来源1",
-    "document_title": "...",
-    "filename": "...",
-    "chunk_index": 0,
-    "score": 0.85,
-    "content": "来源片段前360字"
-  }],
-  "confidence": 0.92,
-  "warnings": [],
-  "retrieval": { /* search结果 */ }
-}
-```
-
-**状态** `status(user_id)`
-
-输出：
-```json
-{
-  "documents": [/* 文档列表 */],
-  "document_count": 6,
-  "chunk_count": 7,
-  "retrieval_engine": "TF-IDF semantic retrieval",
-  "retrieval_backend": "tfidf",
-  "chroma_available": false,
-  "supported_extensions": [".csv", ".docx", ".json", ".md", ".pdf", ".ppt", ".pptx", ".txt"]
-}
+    return any(re.search(p, answer) for p in mock_patterns)
 ```
 
 ---
@@ -581,101 +424,58 @@ def _extract_keywords(text, limit=12):
 
 **文件**：`app/multi_agent/planner_agent.py`
 
-#### 4.5.1 设计目标
+#### 4.5.1 难度曲线设计原理
 
-基于学生画像、知识掌握度和学习目标，生成个性化、动态可调的多阶段学习路径。
+渐进式难度设计的理论基础来自**维果茨基最近发展区理论**和**布鲁姆掌握学习理论**：
 
-#### 4.5.2 目标知识点分析算法
+| 阶段 | 难度 | 心理学依据 |
+|------|:---:|---------|
+| 入门期(0-20%) | easy | 建立自我效能感(bandura)，防止初期挫败导致的放弃 |
+| 过渡期(20-40%) | easy/medium交替 | 逐步引入挑战，维持"恰好可应对"的状态 |
+| 核心期(40-70%) | medium | 进入常规学习区，稳步推进 |
+| 深化期(70-90%) | medium/hard交替 | 增加难度挑战，检验掌握程度 |
+| 冲刺期(90-100%) | hard | 最终检验综合应用能力 |
 
-```
-_analyze_target_topics(profile):
-  收集三类知识点:
-  ├── 薄弱知识点 (profile.weak_topics)     → priority=1, type=weak
-  ├── 未掌握知识点 (mastery < 0.8)         → priority=2, type=need_work
-  └── 偏好知识点 (profile.preferred_topics) → priority=3, type=interest
-  
-  排序规则: (priority ASC, mastery ASC) → 最多10个
-  语义: 薄弱优先学 → 没掌握的接着学 → 感兴趣的激励学
-```
-
-#### 4.5.3 学习步骤规划算法
+#### 4.5.2 周计划分配算法
 
 ```python
-_plan_steps(profile, resources, target_topics):
-    speed_factor = {fast:0.7, medium:1.0, slow:1.3}[profile.learning_speed]
+def get_weekly_plan(path, weekly_hours=10):
+    total_minutes = sum(s.duration for s in path.steps)
+    total_weeks = math.ceil(total_minutes / (weekly_hours * 60))
     
-    for each topic:
-        # 学习步骤
-        学习步骤: {
-            title: '学习：{topic}',
-            duration: 45 × speed_factor,     # 快学生可缩短到31.5分钟
-            difficulty: mastery<0.3→easy, 0.3~0.6→medium, >0.6→hard,
-            activities: base + type_specific  # weak→增加示例, interest→拓展探索
-        }
-        
-        # 练习步骤
-        练习步骤: {
-            title: '练习：{topic}',
-            duration: 30 × speed_factor,
-            difficulty: 比学习难度高一级,
-            activities: [做题, 错题分析, 总结反思]
-        }
-        
-        # 每3个知识点插入一次阶段复习
-        if (i+1) % 3 == 0:
-            复习步骤: {duration: 40 × speed_factor}
+    daily_hours = weekly_hours / 7
+    plan = []
+    step_idx = 0
     
-    # 末尾添加学习总结
-    总结步骤: {title: '学习总结', duration: 30}
-```
-
-#### 4.5.4 难度曲线生成 `_generate_difficulty_curve()`
-
-```
-按学习进度位置 (position = i / (n-1)) 控制难度:
-├── position < 0.2: easy (入门期)
-├── position 0.2~0.4: easy/medium交替 (过渡期)
-├── position 0.4~0.7: medium (核心学习期)
-├── position 0.7~0.9: medium/hard交替 (深化期)
-└── position > 0.9: hard (冲刺期)
-```
-
-#### 4.5.5 里程碑设定
-
-5级递进式里程碑：
-```
-入门成功 → 基础掌握 → 能力提升 → 深入理解 → 融会贯通
-```
-每级对应一个成就奖励（如"解锁成就：初窥门径"），激励持续学习。
-
-#### 4.5.6 动态路径调整
-
-```python
-adjust_path(path, progress):
-    # 标记已完成
-    for step in path.steps:
-        if step.step_number in completed_steps:
-            step.completed = True
+    for week in range(total_weeks):
+        for day in range(7):
+            remaining = daily_hours * 60  # 当天剩余分钟
+            day_tasks = []
+            
+            while remaining > 0 and step_idx < len(path.steps):
+                step = path.steps[step_idx]
+                if step.duration <= remaining:
+                    day_tasks.append({
+                        'step': step.step_number,
+                        'topic': step.topics[0],
+                        'duration': step.duration,
+                        'difficulty': step.difficulty
+                    })
+                    remaining -= step.duration
+                    step_idx += 1
+                else:
+                    break
+            
+            plan.append({
+                'week': week + 1,
+                'day': day + 1,
+                'day_name': ['周一','周二','周三','周四','周五','周六','周日'][day],
+                'tasks': day_tasks,
+                'total_hours': round((daily_hours * 60 - remaining) / 60, 1)
+            })
     
-    # 基于评估结果调整未完成步骤
-    for step in path.steps where not completed:
-        for topic in step.topics where topic in assessments:
-            if score < 0.6:
-                difficulty → 'easy'        # 降低难度
-                duration × 1.2             # 延长时间
-                activities += "额外练习"    # 增加练习
-            elif score > 0.9:
-                duration × 0.8             # 加快进度
-                activities += "进阶挑战"    # 增加挑战
+    return {"weekly_plan": plan, "total_weeks": total_weeks}
 ```
-
-#### 4.5.7 前端可视化实现
-
-三个视图均由同一个后端数据结构驱动：
-
-- **甘特图视图**：使用CSS构建时间线，每个步骤为横条，里程碑为标记点
-- **日历视图**：按7天网格布局，每天显示分配到的学习任务卡片
-- **列表视图**：步骤编号顺序列表，每项显示标题、时长、难度标签
 
 ---
 
@@ -683,60 +483,25 @@ adjust_path(path, progress):
 
 **文件**：`app/multi_agent/tutor_agent.py`
 
-#### 4.6.1 设计目标
+#### 4.6.1 流式回答技术实现（SSE）
 
-提供多模态、上下文化的学习答疑服务，支持6种回答类型自动检测、流式输出、追问纠错和个性化建议。
+流式回答对用户体验至关重要——3秒以上等待会导致用户感知延迟，逐字展示则保持"系统正在工作"的心理反馈：
 
-#### 4.6.2 回答类型自动检测
-
-```python
-_detect_answer_type(question):
-    if '代码' in q or '编程' in q or 'python' in q.lower(): → 'code'
-    elif '比较' in q or '区别' in q or 'vs' in q.lower():   → 'comparison'
-    elif '为什么' in q or '原理' in q or '原因' in q:        → 'explanation'
-    elif '如何' in q or '怎样' in q or '怎么' in q:          → 'guide'
-    elif '计算' in q or '求解' in q or '证明' in q:          → 'calculation'
-    else:                                                    → 'general'
 ```
+前端: EventSource('/agent/stream?question=...')
+      ↓ SSE连接
+后端: Response(content_type='text/event-stream')
+      ↓ yield "data: {type: 'start'}\n\n"
+      ↓ for chunk in LLM.stream_chat():
+      ↓     yield "data: {type: 'chunk', content: chunk}\n\n"
+      ↓ yield "data: {type: 'end'}\n\n"
 
-每种类型对应不同的System Prompt回答格式模板。
-
-#### 4.6.3 流式回答实现
-
-```python
-stream_answer(question, profile, context):
-    # 安全检查
-    is_safe, reason = ContentSafetyFilter.filter(question)
-    if not is_safe: yield 拒绝消息; return
-    
-    # 构建消息
-    prompt = _build_prompt(question, profile, context)
-    messages = [SYSTEM_PROMPT, *conversation_context, user_prompt]
-    
-    # 流式调用
-    try:
-        for chunk in LLM.stream_chat(messages, temperature=0.7):
-            yield chunk  # 逐字返回给前端(SSE)
-    except:
-        yield from _get_fallback_stream_answer(question)
+前端: eventSource.onmessage = (e) => {
+          const data = JSON.parse(e.data);
+          if (data.type === 'chunk') answerDiv.innerText += data.content;
+          if (data.type === 'end') eventSource.close();
+      }
 ```
-
-#### 4.6.4 多模态提示 `_get_multimodal_hints()`
-
-```python
-# 检测回答内容是否需要额外媒体支持
-{
-    'has_diagram': '流程/结构/关系/对比/组成' in answer,    → 建议生成流程图
-    'has_code': '```' in answer or 'def' in answer,         → 有代码块
-    'has_video_script': len(answer) > 500,                  → 建议生成视频
-    'video_outline': {时长: '3-5分钟', 结构: ['开场','讲解','演示','总结']}
-}
-```
-
-#### 4.6.5 高级辅导功能
-
-- **`explain_with_examples(concept, profile)`**：概念深度讲解，配2-3个递增例子+常见误区
-- **`create_practice_for_doubt(question, wrong_answer, profile)`**：基于错题的3道分层练习题（基础巩固→变式应用→综合提升）
 
 ---
 
@@ -744,51 +509,20 @@ stream_answer(question, profile, context):
 
 **文件**：`app/multi_agent/evaluator_agent.py`
 
-#### 4.7.1 设计目标
+#### 4.7.1 指标权重设计的理论依据
 
-对学生学习效果进行8维多维度定量评估，生成结构化学习报告，支持前后对比和趋势分析。
+| 指标 | 权重 | 设计依据 |
+|------|:---:|---------|
+| 知识掌握度 | 25% | 核心指标，衡量"学到了什么" |
+| 练习准确率 | 20% | 直接反映应用能力，"能做对多少" |
+| 概念理解度 | 15% | 概念是知识体系的基础单元 |
+| 问题解决能力 | 15% | 高难度题目反映"融会贯通"的能力 |
+| 学习效率 | 10% | 衡量"投入产出比"，鼓励高效学习 |
+| 时间管理 | 5% | 学习纪律的侧面反映 |
+| 学习持续性 | 5% | 长期坚持比短期冲刺更重要 |
+| 学习投入度 | 5% | 学习态度和深度的综合反映 |
 
-#### 4.7.2 8维加权计算
-
-```python
-overall_score = (
-    knowledge_mastery    × 0.25 +   # 知识掌握度
-    practice_accuracy    × 0.20 +   # 练习准确率
-    concept_understanding × 0.15 +  # 概念理解度
-    problem_solving      × 0.15 +   # 问题解决能力
-    learning_efficiency  × 0.10 +   # 学习效率
-    time_management      × 0.05 +   # 时间管理
-    consistency          × 0.05 +   # 学习持续性
-    engagement           × 0.05     # 学习投入度
-)
-```
-
-#### 4.7.3 各指标计算逻辑
-
-| 指标 | 计算逻辑 |
-|------|---------|
-| knowledge_mastery | profile.knowledge_base所有值的平均×100，无数据默认50 |
-| practice_accuracy | quiz_results中is_correct比例×100，无数据用knowledge_mastery |
-| concept_understanding | 概念类题目is_correct比例×100，无数据用practice_accuracy×0.9 |
-| problem_solving | difficulty=hard题目is_correct比例×100，无数据用practice_accuracy×0.8 |
-| learning_efficiency | (expected_time / actual_time × 100 + knowledge_mastery) / 2 |
-| time_management | (punctuality + planning) × 50 |
-| consistency | min(100, current_streak × 10) |
-| engagement | (consistency + focus_ratio×100 + resource_usage_rate×100) / 3 |
-
-#### 4.7.4 前后对比 `compare_with_previous()`
-
-```python
-# 对比当前报告与上一次报告的差异
-{
-    'overall_change': +5.2,           # 总分变化
-    'metric_changes': {
-        'knowledge_mastery': +3.1,
-        'practice_accuracy': +7.3,
-        ...
-    }
-}
-```
+> 前4项(75%)聚焦"学习结果"，后4项(25%)关注"学习过程"——平衡结果导向与过程导向。
 
 ---
 
@@ -800,179 +534,378 @@ overall_score = (
 
 ```
 BaseLLM (抽象基类)
-├── chat(messages, **kwargs) → str            # 同步对话
-├── stream_chat(messages, **kwargs) → Iterator # 流式对话
-└── generate_with_retry(messages, max_retries, **kwargs)  # 带重试
+├── chat(messages, temperature, max_tokens, **kwargs) → str
+├── stream_chat(messages, **kwargs) → Iterator[str]
+└── generate_with_retry(messages, max_retries=3, **kwargs) → str
+    └── 实现: 循环调用chat()，捕获异常，指数退避重试
 
-实现类:
-├── OpenAIClient: POST /v1/chat/completions + SSE流式
-└── LocalLLM: POST /api/chat (Ollama兼容)
+OpenAIClient(BaseLLM)
+├── 端点: POST {base_url}/v1/chat/completions
+├── 鉴权: Bearer {api_key}
+└── 流式: stream=true → SSE逐行解析
+
+LocalLLM(BaseLLM)
+├── 端点: POST {base_url}/api/chat
+├── 模型: 由OLLAMA_MODEL环境变量指定
+└── 流式: stream=true → JSON行解析
 ```
 
-### 5.2 自动后端检测 `get_llm_client()`
+### 5.2 内容安全过滤器 ContentSafetyFilter
+
+**文件**：`app/multi_agent/__init__.py`
 
 ```python
-1. 尝试 Ollama GET /api/tags (timeout=2s) → 成功则用 LocalLLM
-2. 检查环境变量 OPENAI_API_KEY + OPENAI_BASE_URL → 有则用 OpenAIClient
-3. 默认回退 LocalLLM (需自行启动Ollama)
+class ContentSafetyFilter:
+    SENSITIVE_PATTERNS = [
+        r'违法', r'暴力', r'色情',  # ... 具体模式
+    ]
+    MAX_INPUT_LENGTH = 50000
+    
+    @staticmethod
+    def filter(content: str) -> Tuple[bool, str]:
+        """返回(is_safe, reason)"""
+        if len(content) > ContentSafetyFilter.MAX_INPUT_LENGTH:
+            return False, "输入过长"
+        for pattern in ContentSafetyFilter.SENSITIVE_PATTERNS:
+            if re.search(pattern, content):
+                return False, f"包含敏感内容"
+        return True, ""
+    
+    @staticmethod
+    def sanitize(content: str) -> str:
+        """清理不可见字符和多余空白"""
+        # 移除零宽字符、控制字符(U+0000-U+001F除\t\n\r)
+        # 统一换行为\n
+        # 合并多余空白
+        return cleaned
 ```
 
-### 5.3 降级策略总览
+### 5.3 幻觉检测器 HallucinationDetector
 
-| Agent | 正常时 | 降级时 |
-|-------|--------|--------|
-| ProfileBuilder | LLM生成个性化对话 | 预定义问候模板+结构化追问 |
-| ResourceGenerator | LLM生成6种资源内容 | 6种预定义Markdown/Mermaid/JSON模板 |
-| Tutor | LLM生成6类型回答 | 通用学习指导模板 |
-| KnowledgeBase | LLM+检索生成引用回答 | 检索片段直接拼接+学习建议 |
-
-### 5.4 内容安全与 幻觉检测
-
-**ContentSafetyFilter (__init__.py)**
-- 敏感词模式匹配 (SENSITIVE_PATTERNS)
-- 长度限制 (>50000字符拦截)
-- 内容清理 (移除特殊字符/多余空白)
-
-**HallucinationDetector (__init__.py)**
-- 不确定性表达检测: `据说`、`大概是`、`也许`、`似乎`
-- 虚假引用检测: `《...》...说` 正则匹配
-- 可信领域验证: 计算机科学/数学/物理关键词匹配
-- 接口: `check_factuality(content, topic) → (is_factual, warnings)`
+```python
+class HallucinationDetector:
+    UNCERTAINTY_PATTERNS = [
+        r'据说', r'大概是', r'也许是', r'似乎',
+        r'可能.*应该', r'不太确定', r'有待验证',
+    ]
+    
+    FAKE_CITATION_PATTERNS = [
+        r'《[^》]{2,30}》.*说',
+        r'根据.{2,20}的研究',
+    ]
+    
+    TRUSTED_DOMAINS = [
+        '计算机科学', '数学', '物理', '数据结构',
+        '算法', '操作系统', '网络', '数据库',
+    ]
+    
+    @staticmethod
+    def check_factuality(content: str, topic: str) -> Tuple[bool, List[str]]:
+        """返回(is_factual, warnings)"""
+        warnings = []
+        
+        for pattern in HallucinationDetector.UNCERTAINTY_PATTERNS:
+            if re.search(pattern, content):
+                warnings.append(f"检测到不确定性表达: {pattern}")
+        
+        for pattern in HallucinationDetector.FAKE_CITATION_PATTERNS:
+            if re.search(pattern, content):
+                warnings.append(f"检测到可能虚假的引用: {pattern}")
+        
+        return len(warnings) == 0, warnings
+```
 
 ---
 
 ## 6. 数据模型设计
 
-### 6.1 SQLAlchemy ORM模型
+### 6.1 核心Agent数据模型
 
-| 模型名 | 表名 | 主键 | 核心字段 | 用途 |
-|--------|------|------|---------|------|
-| StudentProfileModel | `student_profiles_agent` | id | user_id, profile_data(JSON), cognitive_style, learning_speed, confidence | 画像持久化 |
-| LearningResourceModel | `learning_resources_agent` | id | resource_id(UUID), user_id, resource_type, title, content, difficulty | 资源存储 |
-| LearningPathModel | `learning_paths_agent` | id | path_id(UUID), user_id, path_data(JSON), current_step, completion_rate | 路径持久化 |
-| AssessmentReportModel | `assessment_reports_agent` | id | user_id, report_data(JSON), overall_score, level | 评估报告存储 |
-| ChatHistoryModel | `chat_history_agent` | id | user_id, session_id, role, content, agent_type | 对话历史 |
-| KnowledgeDocumentModel | `knowledge_documents_agent` | id | document_id(UUID), user_id, title, file_type, content_hash, status | 知识库文档 |
-| KnowledgeChunkModel | `knowledge_chunks_agent` | id | document_id, user_id, chunk_index, content, keywords(JSON) | 知识库分块 |
-| DigitalHumanVideoTaskModel | `digital_human_video_tasks` | id | user_id, task_id, topic, task_status, payload | 数字人视频任务 |
+**文件**：`app/models/agent_models.py`
 
-### 6.2 数据库选择
+| 模型名 | 对应智能体 | 表名 | 关键JSON字段 |
+|--------|----------|------|------------|
+| `StudentProfileModel` | ProfileBuilder | `student_profiles_agent` | profile_data(10维JSON) |
+| `LearningResourceModel` | ResourceGenerator | `learning_resources_agent` | content(完整Markdown/JSON) |
+| `LearningPathModel` | LearningPlanner | `learning_paths_agent` | path_data(步骤列表JSON) |
+| `AssessmentReportModel` | Evaluator | `assessment_reports_agent` | report_data(8维JSON) |
+| `ChatHistoryModel` | Tutor/Profile | `chat_history_agent` | 对话历史 |
+| `KnowledgeDocumentModel` | KnowledgeBase | `knowledge_documents_agent` | 文档元数据 |
+| `KnowledgeChunkModel` | KnowledgeBase | `knowledge_chunks_agent` | keywords(JSON数组) |
+| `DigitalHumanVideoTaskModel` | 扩展功能 | `digital_human_video_tasks` | 视频任务数据 |
 
-使用 **SQLite** 作为数据库（`instance/quiz_system.db`），原因：
-1. 零配置：无需安装MySQL/PostgreSQL
-2. 便携性：单文件数据库，适合竞赛演示
-3. Flask-SQLAlchemy ORM抽象：后续可平滑迁移到生产数据库
+### 6.2 JSON字段的设计哲学
+
+多个Agent模型使用JSON字段存储结构化数据，而非拆分为多个关系表：
+
+| 理由 | 说明 |
+|------|------|
+| **画像弹性** | 10维画像可能扩展为12维或15维，JSON字段无需迁移 |
+| **查询简单** | 大多数查询以user_id为主键，不需要跨JSON字段JOIN |
+| **读写效率** | 画像作为整体读写的概率远高于按维度部分读取 |
+| **竞赛工程** | 减少表数量和迁移脚本，降低答辩出错风险 |
 
 ---
 
-## 7. 前端技术栈
+## 7. 前端技术栈与设计系统
 
-| 技术 | 用途 | 版本 |
-|------|------|------|
-| Bootstrap 5 | UI框架 | 5.x CDN |
-| ECharts | 雷达图、趋势图等数据可视化 | 5.x |
-| Mermaid.js | 思维导图实时渲染 | CDN latest |
-| Font Awesome | 图标系统 | 6.x CDN |
-| Jinja2 | 服务端模板引擎 | Flask内置 |
-| 自定义CSS | 深墨蓝科技风主题 | 内联+独立文件 |
+### 7.1 技术组件清单
+
+| 技术 | 版本 | 引入方式 | 用途 |
+|------|:---:|---------|------|
+| Bootstrap 5 | 5.3.x | CDN | 网格布局、导航栏、卡片、按钮、表单 |
+| ECharts | 5.4.x | CDN | 雷达图、趋势折线图、仪表盘图表 |
+| Mermaid.js | 10.x | CDN | 思维导图实时渲染 |
+| Font Awesome | 6.4.x | CDN | 图标系统(资源卡片图标、导航图标) |
+| 自定义CSS | - | 内联+独立文件 | 深墨蓝科技风主题、卡片动效 |
+
+### 7.2 设计语言：深墨蓝科技风
+
+| 设计元素 | 规范 |
+|---------|------|
+| 主色调 | #1a1a2e (深墨蓝背景) → #16213e (次级背景) |
+| 强调色 | #0f3460 (深蓝) → #4364F7 (亮蓝CTA) |
+| 成功色 | #00C9A7 (青绿) — 用于完成状态、里程碑解锁 |
+| 警告色 | #F9A826 (琥珀) — 用于薄弱指标、待改进 |
+| 危险色 | #E84545 (珊瑚红) — 用于错误、需改进 |
+| 卡片样式 | 圆角8px、轻微阴影(0 2px 10px rgba(0,0,0,0.3))、悬停上浮动效 |
+| 字体 | 系统默认中文字体栈: -apple-system, "Microsoft YaHei", sans-serif |
+| 代码块 | 深色背景 #0d1117，等宽字体 Consolas/Monaco |
+
+### 7.3 Mermaid思维导图渲染
+
+```html
+<!-- 模板中 -->
+<div class="mermaid">
+mindmap
+  数据结构
+    线性结构
+      数组
+      链表
+        单链表
+        双向链表
+      栈
+      队列
+    树形结构
+      二叉树
+      二叉搜索树
+      AVL树
+    图形结构
+      有向图
+      无向图
+</div>
+
+<!-- Mermaid.js自动渲染为交互式思维导图 -->
+```
 
 ---
 
 ## 8. 部署方案
 
-### 8.1 本地运行
+### 8.1 本地开发启动
 
 ```bash
-# 方式一：手动启动
+# 创建虚拟环境
+python -m venv venv
+venv\Scripts\activate  # Windows
+source venv/bin/activate  # Linux/macOS
+
+# 安装依赖
 pip install -r requirements.txt
+
+# 初始化数据库
+python set_db.py
+
+# 启动服务
 python run.py
-
-# 方式二：一键启动
-双击 start.bat
-
-# 访问
-http://127.0.0.1:5000
+# 访问: http://127.0.0.1:5000
 ```
 
-### 8.2 Docker部署
+### 8.2 Windows一键启动
 
-```yaml
-# docker-compose.yml
-services:
-  web:
-    build: .
-    ports: ["5000:5000"]
-    volumes: ["./instance:/app/instance"]
+`start.bat` 执行流程：
+```
+1. 检测Python环境 (.venv优先 → venv → 系统python)
+2. 检测.env文件 (密钥配置)
+3. 启动Flask开发服务器 (PYTHONUTF8=1)
+4. 浏览器访问: http://127.0.0.1:5000
 ```
 
-### 8.3 演示账号
+### 8.3 Docker部署
 
-| 角色 | 用户名 | 密码 |
-|------|--------|------|
-| 管理员 | admin | admin123 |
-| 教师 | teacher | teacher123 |
-| 学生 | student | student123 |
+```bash
+# 构建并启动
+docker compose up -d --build
 
-启动时自动补齐/修正演示账号密码。
+# 初始化数据库(首次)
+docker compose exec web python set_db.py
+
+# 访问: http://localhost:80
+
+# 日志
+docker compose logs -f web
+
+# 停止
+docker compose down
+```
+
+### 8.4 演示环境检查清单
+
+| 检查项 | 命令/方法 | 预期结果 |
+|--------|---------|---------|
+| Python版本 | `python --version` | ≥ 3.8 |
+| 依赖完整 | `pip check` | No broken requirements |
+| 语法编译 | `python -m compileall app` | 无语法错误 |
+| 测试通过 | `pytest tests -q` | 10 passed |
+| 服务启动 | `python run.py` / `start.bat` | http://127.0.0.1:5000 可访问 |
+| 页面冒烟 | 逐一访问核心URL | 全部返回200 |
+| Docker可用 | `docker compose up -d` | 容器启动成功 |
 
 ---
 
 ## 9. 项目目录结构
 
 ```
-1/
+damo-zhixue/
 ├── app/
-│   ├── __init__.py            # Flask应用工厂 create_app()
-│   ├── multi_agent/           # 多智能体核心
-│   │   ├── __init__.py        # 数据类/枚举/安全过滤器
-│   │   ├── coordinator.py     # AgentCoordinator 协调器
-│   │   ├── profile_agent.py   # ProfileBuilderAgent
-│   │   ├── resource_agent.py  # ResourceGeneratorAgent
-│   │   ├── planner_agent.py   # LearningPlannerAgent
-│   │   ├── tutor_agent.py     # TutorAgent
-│   │   ├── evaluator_agent.py # LearningEvaluatorAgent
-│   │   ├── knowledge_agent.py # KnowledgeBaseAgent
-│   │   └── llm_client.py      # LLM接口(BaseLLM/OpenAI/Local)
+│   ├── __init__.py                 # Flask应用工厂 create_app()
+│   ├── multi_agent/                # 🔴 多智能体核心模块
+│   │   ├── __init__.py             #   数据类(ResourceType/Session等)、安全过滤器
+│   │   ├── coordinator.py          #   AgentCoordinator 协调器(会话/调度/日志)
+│   │   ├── profile_agent.py        #   ProfileBuilderAgent (10维画像)
+│   │   ├── resource_agent.py       #   ResourceGeneratorAgent (6种资源)
+│   │   ├── planner_agent.py        #   LearningPlannerAgent (路径规划)
+│   │   ├── tutor_agent.py          #   TutorAgent (智能辅导)
+│   │   ├── evaluator_agent.py      #   LearningEvaluatorAgent (效果评估)
+│   │   ├── knowledge_agent.py      #   KnowledgeBaseAgent (RAG全链路, 563行)
+│   │   └── llm_client.py           #   LLM接口 (BaseLLM/OpenAI/Ollama)
 │   ├── models/
-│   │   ├── user.py            # 用户模型
-│   │   ├── agent_models.py    # 智能体数据模型(8个)
-│   │   └── ...                # 其他模型
+│   │   ├── user.py                 #   用户模型 (User)
+│   │   ├── agent_models.py         #   智能体数据模型 (8个ORM模型)
+│   │   ├── quiz.py                 #   题库模型 (Question/QuizSubmission)
+│   │   └── ...                     #   其他业务模型
 │   ├── routes/
-│   │   ├── agent_system.py    # /agent/* 多智能体API
-│   │   ├── main.py            # 首页、赛题对照等
-│   │   ├── auth.py            # 登录注册
-│   │   ├── quiz.py            # 题库与答题
-│   │   ├── analysis.py        # 数据分析与报告
-│   │   ├── student.py         # 学习计划与详情
-│   │   ├── intelligent_assistant.py  # 智能问答页面
-│   │   └── test.py            # 能力测试中心
-│   └── templates/             # 49个HTML模板
+│   │   ├── agent_system.py         #   /agent/* 多智能体API (核心)
+│   │   ├── main.py                 #   首页、赛题对照、成就中心等
+│   │   ├── auth.py                 #   登录、注册、登出
+│   │   ├── quiz.py                 #   题库管理、答题、提交
+│   │   ├── analysis.py             #   数据分析、学习报告、画像展示
+│   │   ├── student.py              #   学习计划、专项练习、详情
+│   │   ├── intelligent_assistant.py #  智能问答主页面
+│   │   ├── test.py                 #   能力测试中心
+│   │   ├── nav.py                  #   导航辅助路由
+│   │   ├── features.py             #   功能展示页
+│   │   └── extra_features.py       #   扩展功能
+│   ├── templates/                  #   49个Jinja2 HTML模板
+│   │   ├── base.html / base_pro.html / base_unified.html  # 基础布局
+│   │   ├── index.html              #   首页
+│   │   ├── components/             #   可复用组件 (导航栏等)
+│   │   ├── auth/                   #   认证相关页面
+│   │   ├── analysis/               #   数据分析页面
+│   │   ├── student/                #   学生端页面
+│   │   ├── quiz/                   #   题库页面
+│   │   ├── test/                   #   测试中心页面
+│   │   ├── agent_system/           #   智能体系统页面
+│   │   └── intelligent_assistant/  #   智能问答页面
+│   ├── static/                     #   静态资源 (CSS/JS/图片)
+│   └── utils/                      #   工具函数
 ├── data/
 │   └── knowledge_base/
-│       └── computer_organization_sample/  # 课程知识库样例包(6文件)
-├── docs/                      # 参赛文档
-├── outputs/                   # 答辩PPT等输出
-├── instance/                  # SQLite数据库目录
-├── run.py                     # 启动入口
-├── start.bat                  # Windows一键启动
-├── Dockerfile
-├── docker-compose.yml
-├── wsgi.py
-├── requirements.txt
-└── README.md
+│       └── computer_organization_sample/  # 课程知识库样例包 (6文件)
+├── docs/                           #   参赛文档 (8份MD + 1份DOCX + evidence/)
+├── outputs/                        #   答辩PPT等输出
+├── tests/                          #   自动化测试
+├── instance/                       #   SQLite数据库 (运行时生成)
+├── screenshots/                    #   系统截图
+├── run.py                          #   开发环境启动入口
+├── wsgi.py                         #   生产环境WSGI入口
+├── set_db.py                       #   数据库初始化与测试数据
+├── start.bat                       #   Windows一键启动
+├── install.bat                     #   Windows一键安装
+├── deploy_to_server.sh             #   Linux服务器部署脚本
+├── Dockerfile                      #   Docker镜像
+├── docker-compose.yml              #   Docker编排
+├── nginx.conf                      #   Nginx反向代理
+├── requirements.txt                #   完整Python依赖
+├── requirements_light.txt          #   精简依赖
+├── .env.example                    #   环境变量模板
+├── .gitignore                      #   Git忽略规则
+├── package.json                    #   项目元信息
+└── README.md                       #   项目说明
 ```
 
 ---
 
-## 10. 创新点总结
+## 10. 创新点与技术亮点总结
 
-1. **画像驱动全链路**：10维画像不是终点，而是贯穿资源生成、路径规划、辅导问答的输入依据
-2. **多Agent专业分工**：7类智能体各司其职，协调器统一调度并行执行，架构可扩展
-3. **RAG可信引擎**：8格式解析+双后端检索+LLM生成+引用标记+Mock过滤+降级兜底，六层保障
-4. **评测回流闭环**：测评→报告→画像更新→路径调整，形成数据驱动的持续优化
-5. **教学场景落地**：真实课程样例包+教师材料优先+资料不足拦截，针对教学场景深度定制
-6. **工程化证据完善**：Docker+一键启动+证据包+截图+接口JSON，竞赛展示链条完整
+### 10.1 架构创新
+
+1. **画像驱动全链路**：10维画像不是终点，而是贯穿资源生成、路径规划、辅导问答的输入依据——每个Agent的输出都因画像不同而不同
+2. **多Agent专业分工**：7类智能体按教学角色划分(而非功能模块划分)，每类有独立System Prompt和降级策略，架构清晰可扩展
+3. **协调器单例调度**：全局单例管理会话和Agent调用链，4线程并行资源生成，执行日志可追溯
+
+### 10.2 工程创新
+
+4. **RAG六层保障**：8格式解析→智能分块→双后端检索→LLM证据生成→引用追溯→多重兜底，构成完整的可信问答工程链路
+5. **评测回流闭环**：测验→8维评估→雷达图→画像更新→路径动态调整，数据在系统内循环驱动优化
+6. **零配置启动**：SQLite免安装数据库 + 自动编码检测 + 一键启动脚本 + 演示账号自动修正
+
+### 10.3 场景创新
+
+7. **教师深度参与**：教师不仅是数据查看者，更是知识来源——教师材料优先于LLM自由知识
+8. **竞赛化表达**：甘特图/雷达图/思维导图/赛题对照页，为答辩演示量身定制的可视化方案
+9. **双重保障设计**：每个Agent都有正常模式和降级模式，系统在任何条件下都有合理输出
 
 ---
 
-*本开发说明书基于大模智学 v2.0 完整源码编写，所有功能描述均可对应到 `app/multi_agent/` 中的具体代码实现。*
+## 11. 开发环境搭建指南
+
+### 11.1 推荐开发环境
+
+| 工具 | 推荐版本 | 用途 |
+|------|---------|------|
+| Python | 3.9 - 3.12 | 运行环境 |
+| VS Code | latest | IDE(推荐Python扩展) |
+| Git | latest | 版本控制 |
+| Docker Desktop | latest | 容器化测试 |
+| Ollama | latest | 本地LLM测试(可选) |
+
+### 11.2 VS Code配置建议
+
+```json
+// .vscode/settings.json
+{
+    "python.defaultInterpreterPath": "${workspaceFolder}/venv/Scripts/python.exe",
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": true,
+    "[python]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "ms-python.black-formatter"
+    }
+}
+```
+
+### 11.3 调试配置
+
+```json
+// .vscode/launch.json
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Flask Debug",
+            "type": "python",
+            "request": "launch",
+            "module": "flask",
+            "env": { "FLASK_APP": "run.py", "FLASK_DEBUG": "1" },
+            "args": ["run", "--host=0.0.0.0", "--port=5000"],
+            "jinja": true
+        }
+    ]
+}
+```
+
+---
+
+*本开发说明书基于大模智学 v3.0 完整源码编写，所有功能描述均可对应到 `app/multi_agent/` 中的具体代码实现。*
