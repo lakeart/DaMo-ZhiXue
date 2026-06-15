@@ -1,0 +1,569 @@
+{% extends "base.html" %}
+
+{% block title %}教师控制台 - 大模智学{% endblock %}
+
+{% block styles %}
+<style>
+    .teacher-dashboard-page {
+        min-height: 100vh;
+        background:
+            radial-gradient(circle at 12% 12%, rgba(59, 130, 246, 0.18), transparent 26%),
+            radial-gradient(circle at 88% 8%, rgba(16, 185, 129, 0.14), transparent 24%),
+            linear-gradient(135deg, #0b1220 0%, #111827 46%, #0f172a 100%);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .teacher-dashboard-page::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image:
+            linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+        background-size: 46px 46px;
+        pointer-events: none;
+    }
+
+    .dashboard-content {
+        position: relative;
+        z-index: 1;
+        padding: 2rem;
+    }
+
+    .panel-card {
+        background: rgba(15, 23, 42, 0.78);
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        border-radius: 20px;
+        box-shadow: 0 18px 48px rgba(2, 6, 23, 0.28);
+        backdrop-filter: blur(14px);
+        color: #e5eefb;
+    }
+
+    .hero-card {
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hero-card::before {
+        content: "";
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 3px;
+        background: linear-gradient(90deg, #3b82f6, #22c55e, #38bdf8);
+    }
+
+    .hero-layout {
+        display: flex;
+        justify-content: space-between;
+        gap: 1.5rem;
+        align-items: center;
+    }
+
+    .hero-user {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .hero-avatar {
+        width: 72px;
+        height: 72px;
+        border-radius: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+        color: #eff6ff;
+        background: linear-gradient(135deg, #2563eb, #06b6d4);
+        box-shadow: 0 16px 36px rgba(37, 99, 235, 0.28);
+    }
+
+    .hero-title {
+        margin: 0;
+        color: #f8fafc;
+        font-size: 1.9rem;
+        font-weight: 700;
+    }
+
+    .hero-subtitle {
+        margin: 0.45rem 0 0;
+        color: #a8b6cc;
+    }
+
+    .hero-badges {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.55rem 0.95rem;
+        border-radius: 999px;
+        background: rgba(59, 130, 246, 0.12);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        color: #dbeafe;
+        font-size: 0.9rem;
+    }
+
+    .stats-grid,
+    .feature-grid,
+    .summary-grid,
+    .weak-topic-grid {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        margin-bottom: 1.5rem;
+    }
+
+    .feature-grid {
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        margin-bottom: 1.5rem;
+    }
+
+    .summary-grid {
+        grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+        margin-bottom: 1.5rem;
+    }
+
+    .weak-topic-grid {
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    }
+
+    .stat-card,
+    .feature-card,
+    .section-card,
+    .weak-topic-card {
+        padding: 1.25rem;
+    }
+
+    .stat-card {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .stat-icon,
+    .feature-icon {
+        width: 54px;
+        height: 54px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        color: #f8fafc;
+        flex-shrink: 0;
+    }
+
+    .stat-icon.blue, .feature-icon.blue { background: linear-gradient(135deg, #2563eb, #38bdf8); }
+    .stat-icon.green, .feature-icon.green { background: linear-gradient(135deg, #059669, #22c55e); }
+    .stat-icon.orange, .feature-icon.orange { background: linear-gradient(135deg, #ea580c, #f59e0b); }
+    .stat-icon.cyan, .feature-icon.cyan { background: linear-gradient(135deg, #0891b2, #22d3ee); }
+
+    .stat-label {
+        color: #8fa1ba;
+        font-size: 0.9rem;
+        margin-bottom: 0.2rem;
+    }
+
+    .stat-value {
+        color: #f8fafc;
+        font-size: 1.8rem;
+        font-weight: 700;
+        line-height: 1.1;
+    }
+
+    .stat-note,
+    .feature-desc,
+    .section-subtitle,
+    .table-muted,
+    .empty-text {
+        color: #9fb0c6;
+    }
+
+    .feature-card h3,
+    .section-title {
+        color: #f8fafc;
+        margin-bottom: 0.5rem;
+    }
+
+    .feature-link {
+        color: #7dd3fc;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .feature-link:hover {
+        color: #bae6fd;
+    }
+
+    .section-card {
+        height: 100%;
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .section-kicker {
+        color: #38bdf8;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.25rem;
+    }
+
+    .table-wrap {
+        overflow-x: auto;
+    }
+
+    .dashboard-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .dashboard-table th,
+    .dashboard-table td {
+        padding: 0.8rem 0.65rem;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+        color: #dbeafe;
+        font-size: 0.92rem;
+        vertical-align: middle;
+    }
+
+    .dashboard-table th {
+        color: #9fb0c6;
+        font-weight: 600;
+        font-size: 0.82rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .score-pill,
+    .topic-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        border-radius: 999px;
+        padding: 0.3rem 0.7rem;
+        font-size: 0.82rem;
+        border: 1px solid transparent;
+    }
+
+    .score-pill.good {
+        background: rgba(34, 197, 94, 0.12);
+        color: #86efac;
+        border-color: rgba(34, 197, 94, 0.22);
+    }
+
+    .score-pill.mid {
+        background: rgba(245, 158, 11, 0.12);
+        color: #fcd34d;
+        border-color: rgba(245, 158, 11, 0.22);
+    }
+
+    .score-pill.low {
+        background: rgba(239, 68, 68, 0.12);
+        color: #fca5a5;
+        border-color: rgba(239, 68, 68, 0.22);
+    }
+
+    .topic-pill {
+        background: rgba(59, 130, 246, 0.12);
+        color: #bfdbfe;
+        border-color: rgba(59, 130, 246, 0.18);
+    }
+
+    .student-list {
+        display: grid;
+        gap: 0.85rem;
+    }
+
+    .student-item,
+    .weak-topic-card {
+        border: 1px solid rgba(148, 163, 184, 0.12);
+        border-radius: 16px;
+        background: rgba(15, 23, 42, 0.55);
+    }
+
+    .student-item {
+        padding: 1rem;
+    }
+
+    .student-meta,
+    .weak-topic-meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.75rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .student-name,
+    .weak-topic-title {
+        color: #f8fafc;
+        font-weight: 600;
+    }
+
+    .student-subline,
+    .weak-topic-subline {
+        color: #8fa1ba;
+        font-size: 0.88rem;
+    }
+
+    .progress-track {
+        height: 8px;
+        border-radius: 999px;
+        background: rgba(148, 163, 184, 0.14);
+        overflow: hidden;
+        margin-top: 0.8rem;
+    }
+
+    .progress-bar {
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #38bdf8, #22c55e);
+    }
+
+    @media (max-width: 992px) {
+        .summary-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .hero-layout {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .hero-badges {
+            justify-content: flex-start;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-content {
+            padding: 1rem;
+        }
+
+        .hero-user {
+            align-items: flex-start;
+        }
+
+        .hero-avatar {
+            width: 58px;
+            height: 58px;
+            border-radius: 18px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set stats = dashboard.stats %}
+<div class="teacher-dashboard-page">
+    <div class="dashboard-content">
+        <div class="panel-card hero-card">
+            <div class="hero-layout">
+                <div class="hero-user">
+                    <div class="hero-avatar">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <div>
+                        <h1 class="hero-title">教师控制台</h1>
+                        <p class="hero-subtitle">{{ current_user.username }}，当前首页已经接入真实学生数据、题库数据和作答数据，可直接用于演示与管理。</p>
+                    </div>
+                </div>
+                <div class="hero-badges">
+                    <span class="hero-badge"><i class="fas fa-user-graduate"></i>{{ stats.total_students }} 名学生</span>
+                    <span class="hero-badge"><i class="fas fa-book"></i>{{ stats.total_questions }} 道题目</span>
+                    <span class="hero-badge"><i class="fas fa-wave-square"></i>{{ stats.total_submissions }} 条作答</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="panel-card stat-card">
+                <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+                <div>
+                    <div class="stat-label">学生总数</div>
+                    <div class="stat-value">{{ stats.total_students }}</div>
+                    <div class="stat-note">活跃学生 {{ stats.active_students }} 人</div>
+                </div>
+            </div>
+            <div class="panel-card stat-card">
+                <div class="stat-icon green"><i class="fas fa-book-open"></i></div>
+                <div>
+                    <div class="stat-label">题库规模</div>
+                    <div class="stat-value">{{ stats.total_questions }}</div>
+                    <div class="stat-note">覆盖 {{ stats.topic_count }} 个知识主题</div>
+                </div>
+            </div>
+            <div class="panel-card stat-card">
+                <div class="stat-icon orange"><i class="fas fa-pen-ruler"></i></div>
+                <div>
+                    <div class="stat-label">作答记录</div>
+                    <div class="stat-value">{{ stats.total_submissions }}</div>
+                    <div class="stat-note">可直接支撑教师分析页</div>
+                </div>
+            </div>
+            <div class="panel-card stat-card">
+                <div class="stat-icon cyan"><i class="fas fa-chart-line"></i></div>
+                <div>
+                    <div class="stat-label">平均正确率</div>
+                    <div class="stat-value">{{ stats.average_accuracy }}%</div>
+                    <div class="stat-note">平均答题耗时 {{ stats.average_time }} 秒</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="feature-grid">
+            <div class="panel-card feature-card">
+                <div class="feature-icon blue"><i class="fas fa-book"></i></div>
+                <h3>题库管理</h3>
+                <p class="feature-desc">查看、筛选、编辑题库内容，当前首页已确认题库不再是空状态。</p>
+                <a href="{{ url_for('quiz.index') }}" class="feature-link">进入题库管理</a>
+            </div>
+            <div class="panel-card feature-card">
+                <div class="feature-icon green"><i class="fas fa-chart-pie"></i></div>
+                <h3>教学分析</h3>
+                <p class="feature-desc">基于真实作答记录查看班级趋势、知识薄弱点和学习画像分析。</p>
+                <a href="{{ url_for('analysis.index') }}" class="feature-link">进入数据分析</a>
+            </div>
+            <div class="panel-card feature-card">
+                <div class="feature-icon orange"><i class="fas fa-address-card"></i></div>
+                <h3>学生管理</h3>
+                <p class="feature-desc">恢复学生列表与学生数据入口，便于老师查看个体学习状态与画像。</p>
+                <a href="{{ url_for('student.student_list') }}" class="feature-link">进入学生管理</a>
+            </div>
+        </div>
+
+        <div class="summary-grid">
+            <div class="panel-card section-card">
+                <div class="section-header">
+                    <div>
+                        <div class="section-kicker">Recent Activity</div>
+                        <h2 class="section-title">最近作答记录</h2>
+                        <div class="section-subtitle">老师可以在首页快速确认系统不是空壳，数据流已经恢复。</div>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table class="dashboard-table">
+                        <thead>
+                            <tr>
+                                <th>学生</th>
+                                <th>知识点</th>
+                                <th>题型</th>
+                                <th>成绩</th>
+                                <th>时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if dashboard.recent_submissions %}
+                                {% for item in dashboard.recent_submissions %}
+                                <tr>
+                                    <td>
+                                        <div>{{ item.student_name }}</div>
+                                        <div class="table-muted">{{ item.student_id }}</div>
+                                    </td>
+                                    <td><span class="topic-pill">{{ item.topic }}</span></td>
+                                    <td>{{ item.question_style }}</td>
+                                    <td>
+                                        {% set score_class = 'good' if item.accuracy >= 80 else 'mid' if item.accuracy >= 60 else 'low' %}
+                                        <span class="score-pill {{ score_class }}">{{ item.score }}/{{ item.max_score }} · {{ item.accuracy }}%</span>
+                                    </td>
+                                    <td>
+                                        <div>{{ item.submit_time.strftime('%m-%d %H:%M') if item.submit_time else '--' }}</div>
+                                        <div class="table-muted">{{ item.time_region }}</div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="empty-text">暂无作答记录</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="panel-card section-card">
+                <div class="section-header">
+                    <div>
+                        <div class="section-kicker">Student Snapshot</div>
+                        <h2 class="section-title">学生活跃概况</h2>
+                        <div class="section-subtitle">按作答活跃度汇总，方便老师快速锁定重点跟进对象。</div>
+                    </div>
+                </div>
+                <div class="student-list">
+                    {% if dashboard.student_snapshots %}
+                        {% for item in dashboard.student_snapshots %}
+                        <div class="student-item">
+                            <div class="student-meta">
+                                <div>
+                                    <div class="student-name">{{ item.student_name }}</div>
+                                    <div class="student-subline">{{ item.student_id }} · 最近作答 {{ item.last_submit.strftime('%m-%d %H:%M') if item.last_submit else '--' }}</div>
+                                </div>
+                                {% set score_class = 'good' if item.avg_accuracy >= 80 else 'mid' if item.avg_accuracy >= 60 else 'low' %}
+                                <span class="score-pill {{ score_class }}">{{ item.avg_accuracy }}%</span>
+                            </div>
+                            <div class="student-subline">累计作答 {{ item.submission_count }} 次</div>
+                            <div class="progress-track">
+                                <div class="progress-bar" style="width: {{ item.avg_accuracy }}%;"></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-text">暂无学生作答数据</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-card section-card">
+            <div class="section-header">
+                <div>
+                    <div class="section-kicker">Weak Topics</div>
+                    <h2 class="section-title">班级薄弱知识点</h2>
+                    <div class="section-subtitle">基于平均正确率自动筛出当前最需要干预的知识点。</div>
+                </div>
+            </div>
+            <div class="weak-topic-grid">
+                {% if dashboard.weak_topics %}
+                    {% for item in dashboard.weak_topics %}
+                    <div class="weak-topic-card">
+                        <div class="weak-topic-meta">
+                            <div>
+                                <div class="weak-topic-title">{{ item.topic }}</div>
+                                <div class="weak-topic-subline">作答 {{ item.submission_count }} 次</div>
+                            </div>
+                            {% set score_class = 'good' if item.avg_accuracy >= 80 else 'mid' if item.avg_accuracy >= 60 else 'low' %}
+                            <span class="score-pill {{ score_class }}">{{ item.avg_accuracy }}%</span>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-bar" style="width: {{ item.avg_accuracy }}%;"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-text">暂无知识点统计数据</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

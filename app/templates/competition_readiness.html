@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+
+{% block title %}赛题契合度中心 - 大模智学{% endblock %}
+
+{% block styles %}
+<style>
+    .readiness-page {
+        padding: 110px 2rem 4rem;
+        min-height: 100vh;
+        background:
+            radial-gradient(circle at 15% 10%, rgba(67, 100, 247, 0.22), transparent 28%),
+            radial-gradient(circle at 88% 18%, rgba(0, 201, 167, 0.18), transparent 26%),
+            var(--bg-primary);
+    }
+
+    .readiness-container {
+        max-width: 1280px;
+        margin: 0 auto;
+    }
+
+    .readiness-hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.8fr);
+        gap: 1.5rem;
+        align-items: stretch;
+        margin-bottom: 1.5rem;
+    }
+
+    .hero-panel,
+    .score-panel,
+    .module-card,
+    .strength-panel {
+        background: rgba(28, 33, 40, 0.78);
+        border: 1px solid rgba(240, 246, 252, 0.1);
+        border-radius: 16px;
+        box-shadow: var(--shadow-card);
+        backdrop-filter: blur(18px);
+    }
+
+    .hero-panel {
+        padding: 2rem;
+    }
+
+    .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--primary-end);
+        background: rgba(67, 100, 247, 0.14);
+        border: 1px solid rgba(67, 100, 247, 0.25);
+        border-radius: 999px;
+        padding: 0.45rem 0.85rem;
+        font-size: 0.85rem;
+        margin-bottom: 1rem;
+    }
+
+    .hero-panel h1 {
+        font-size: 2.25rem;
+        font-weight: 800;
+        margin-bottom: 0.75rem;
+    }
+
+    .hero-panel p {
+        color: var(--text-secondary);
+        max-width: 780px;
+        margin-bottom: 1.25rem;
+    }
+
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+        gap: 0.85rem;
+    }
+
+    .summary-item {
+        padding: 1rem;
+        border-radius: 12px;
+        background: rgba(13, 17, 23, 0.56);
+        border: 1px solid rgba(240, 246, 252, 0.08);
+    }
+
+    .summary-value {
+        color: var(--text-primary);
+        font-size: 1.25rem;
+        font-weight: 800;
+    }
+
+    .summary-label {
+        color: var(--text-secondary);
+        font-size: 0.82rem;
+        margin-top: 0.25rem;
+    }
+
+    .score-panel {
+        padding: 1.6rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+    }
+
+    .score-ring {
+        width: 170px;
+        height: 170px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: conic-gradient(var(--secondary-color) calc(var(--score) * 1%), rgba(255,255,255,0.08) 0);
+        margin-bottom: 1rem;
+        position: relative;
+    }
+
+    .score-ring::after {
+        content: '';
+        position: absolute;
+        inset: 14px;
+        border-radius: 50%;
+        background: var(--bg-card);
+    }
+
+    .score-value {
+        position: relative;
+        z-index: 1;
+        font-size: 2.35rem;
+        font-weight: 900;
+    }
+
+    .module-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .module-card {
+        padding: 1.25rem;
+    }
+
+    .module-head {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .module-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 13px;
+        display: grid;
+        place-items: center;
+        background: var(--gradient-primary);
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .module-title {
+        font-weight: 800;
+        margin-bottom: 0.25rem;
+    }
+
+    .module-level {
+        color: var(--secondary-color);
+        font-size: 0.84rem;
+    }
+
+    .progress-track {
+        height: 8px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.08);
+        overflow: hidden;
+        margin: 0.75rem 0 1rem;
+    }
+
+    .progress-fill {
+        height: 100%;
+        width: var(--percent);
+        background: linear-gradient(90deg, var(--primary-mid), var(--secondary-color));
+    }
+
+    .chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        margin-bottom: 0.9rem;
+    }
+
+    .chip {
+        padding: 0.32rem 0.6rem;
+        border-radius: 999px;
+        background: rgba(67, 100, 247, 0.13);
+        color: var(--primary-end);
+        font-size: 0.76rem;
+    }
+
+    .module-list {
+        color: var(--text-secondary);
+        font-size: 0.88rem;
+        padding-left: 1.1rem;
+        margin-bottom: 0.85rem;
+    }
+
+    .module-list li {
+        margin-bottom: 0.35rem;
+    }
+
+    .next-step {
+        border-left: 3px solid var(--warning-color);
+        background: rgba(210, 153, 34, 0.1);
+        border-radius: 10px;
+        padding: 0.8rem;
+        color: var(--text-secondary);
+        font-size: 0.84rem;
+    }
+
+    .strength-panel {
+        padding: 1.5rem;
+    }
+
+    .strength-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 0.85rem;
+        margin-top: 1rem;
+    }
+
+    .strength-item {
+        display: flex;
+        gap: 0.75rem;
+        padding: 1rem;
+        border-radius: 12px;
+        background: rgba(13, 17, 23, 0.55);
+        color: var(--text-secondary);
+    }
+
+    .strength-item i {
+        color: var(--secondary-color);
+        margin-top: 0.2rem;
+    }
+
+    @media (max-width: 900px) {
+        .readiness-hero {
+            grid-template-columns: 1fr;
+        }
+
+        .readiness-page {
+            padding: 96px 1rem 3rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="readiness-page">
+    <div class="readiness-container">
+        <section class="readiness-hero">
+            <div class="hero-panel">
+                <div class="hero-badge">
+                    <i class="fas fa-award"></i>
+                    软件杯 A3 赛题 · 国奖要求对照
+                </div>
+                <h1>{{ readiness.title }}</h1>
+                <p>{{ readiness.subtitle }}。本页将赛题要求、系统功能证据与下一步提升点放在同一张演示面板中，便于评委快速判断项目契合度。</p>
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <div class="summary-value">{{ readiness.summary.agent_count }}</div>
+                        <div class="summary-label">智能体协同</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-value">{{ readiness.summary.profile_dimensions }}</div>
+                        <div class="summary-label">学习画像</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-value">{{ readiness.summary.resource_types }}</div>
+                        <div class="summary-label">资源生成</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-value">RAG</div>
+                        <div class="summary-label">{{ readiness.summary.rag_pipeline }}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-value">{{ readiness.summary.deployment }}</div>
+                        <div class="summary-label">部署方式</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-value">{{ readiness.summary.documentation }}</div>
+                        <div class="summary-label">配套文档</div>
+                    </div>
+                </div>
+            </div>
+            <div class="score-panel">
+                <div class="score-ring" style="--score: {{ readiness.total_score }};">
+                    <div class="score-value">{{ readiness.total_score }}</div>
+                </div>
+                <h3>综合完成度</h3>
+                <p class="text-secondary mb-0">核心技术能力已形成可演示闭环，重点围绕 RAG、画像、路径规划和资源生成凸显优势。</p>
+            </div>
+        </section>
+
+        <section class="module-grid">
+            {% for module in readiness.modules %}
+            <article class="module-card">
+                <div class="module-head">
+                    <div class="module-icon">
+                        <i class="fas {{ module.icon }}"></i>
+                    </div>
+                    <div>
+                        <div class="module-title">{{ module.name }}</div>
+                        <div class="module-level">{{ module.level }} · {{ module.score }}%</div>
+                    </div>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-fill" style="--percent: {{ module.score }}%;"></div>
+                </div>
+                <div class="chip-row">
+                    {% for item in module.requirements %}
+                    <span class="chip">{{ item }}</span>
+                    {% endfor %}
+                </div>
+                <ul class="module-list">
+                    {% for item in module.evidence %}
+                    <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+                <div class="next-step">
+                    <strong>下一步：</strong>{{ module.next_steps | join('；') }}
+                </div>
+            </article>
+            {% endfor %}
+        </section>
+
+        <section class="strength-panel">
+            <h3 class="mb-0"><i class="fas fa-star me-2 text-warning"></i>项目优势提炼</h3>
+            <div class="strength-list">
+                {% for item in readiness.strengths %}
+                <div class="strength-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span>{{ item }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+</main>
+{% endblock %}

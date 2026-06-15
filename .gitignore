@@ -1,0 +1,62 @@
+# 大模智学 - Git 忽略文件
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# 虚拟环境
+venv/
+.venv/
+env/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 日志
+logs/
+*.log
+
+# 数据库
+instance/*.db
+*.db-journal
+*.db-wal
+
+# 上传文件
+uploads/
+!uploads/.gitkeep
+
+# 输出和临时文件
+*.tmp
+*.bak
+
+# 环境配置（含密钥）
+.env
+.env.local
+.env.production
+
+# Node
+node_modules/
+package-lock.json
+
+# Docker
+.docker/
+
+# 测试覆盖率
+.coverage
+htmlcov/
+.pytest_cache/
